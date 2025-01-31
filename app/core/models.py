@@ -3,7 +3,7 @@ from typing import List
 from uuid import UUID, uuid4
 from enum import Enum
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 class NotificationType(str, Enum):
     EMAIL = "email"
@@ -27,7 +27,7 @@ class Website(SQLModel, table=True):
     check_interval: int = Field(default=300)  # seconds
     is_active: bool = Field(default=True)
     ssl_check_enabled: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=datetime.now(datetime.timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class NotificationPreference(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -39,7 +39,7 @@ class NotificationPreference(SQLModel, table=True):
 class UptimeLog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     website_id: str = Field(..., foreign_key="website.id")
-    timestamp: datetime = Field(default_factory=datetime.now(datetime.timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_up: bool
     response_time: int | None  # milliseconds
     status_code: int | None
@@ -48,7 +48,7 @@ class UptimeLog(SQLModel, table=True):
 class SSLLog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     website_id: str = Field(..., foreign_key="website.id")
-    timestamp: datetime = Field(default_factory=datetime.now(datetime.timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     valid_until: datetime
     issuer: str | None
     is_valid: bool
