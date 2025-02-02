@@ -1,8 +1,7 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List
-from uuid import UUID, uuid4
+from uuid import uuid4
 from enum import Enum
-from typing import Optional
 from datetime import datetime, timezone
 
 class NotificationType(str, Enum):
@@ -23,11 +22,15 @@ class Website(SQLModel, table=True):
     id: str | None = Field(default_factory=lambda: str(uuid4()), primary_key=True)
     user_id: str = Field(..., foreign_key="user.id")
     url: str = Field(..., nullable=False)
-    name: str = Field(..., nullable=False)
-    check_interval: int = Field(default=300)  # seconds
-    is_active: bool = Field(default=True)
-    ssl_check_enabled: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    name: str = Field(..., nullable=False) # human readable name for website
+    uptime_check_interval: int = Field(default=300)  # seconds
+    is_active: bool = Field(default=True) # boolean flag to enable/ disable monitoring for website
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc)) # when website was created
+    ssl_check_enabled: bool = Field(default=True) # boolean flag to enable/ disable ssl checks
+    ssl_expiry_date: datetime | None = Field(default=None) # stores ssl expiry date; to be update during ssl checks
+    ssl_last_checked: datetime | None = Field(default=None) # tracks last time ssl status was checked; to be update during ssl checks
+    warning_threshold_days: int = Field(default=30) # configurable number of days for warning on ssl expiry
+    user: User | None = Relationship(back_populates="websites")
 
 class NotificationPreference(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
