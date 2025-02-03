@@ -1,5 +1,5 @@
 services:
-  server:
+  app:
     build:
       context: .
     ports:
@@ -9,6 +9,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - ./alembic/versions:/app/alembic/versions  # Link Alembic migrations
 
   db:
     image: postgres
