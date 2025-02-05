@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, HttpUrl
 from datetime import datetime
 from enum import Enum
 
@@ -23,7 +23,7 @@ class UserRead(BaseModel):
         orm_mode = True
 
 class WebsiteCreate(BaseModel):
-    url: str
+    url: HttpUrl
     name: str
     check_interval: int | None = 300
     is_active: int | bool = True
@@ -32,7 +32,7 @@ class WebsiteCreate(BaseModel):
 class WebsiteRead(BaseModel):
     id: str
     user_id: str
-    url: str
+    url: HttpUrl
     name: str
     check_interval: int
     is_active: bool
