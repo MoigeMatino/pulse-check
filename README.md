@@ -2,7 +2,7 @@
 
 🚧 **UNDER DEVELOPMENT** 🚧  
 
-This repository hosts the development of **PulseCheck**, a Python-based application designed to monitor application uptime and SSL certificate health while providing real-time notifications to users.  
+A modern, all-in-one uptime monitoring and SSL certificate health tool designed to keep your websites and applications running smoothly. With real-time notifications via email, SMS, and Slack, PulseCheck ensures you're always informed about downtime, SSL expirations, and critical issues—so you can act fast and stay ahead.
 
 ## **Objective**  
 The goal of this project is to help businesses and individuals stay informed about the status of their applications and websites by:  
