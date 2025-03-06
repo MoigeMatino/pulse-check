@@ -27,7 +27,48 @@ The goal of this project is to help businesses and individuals stay informed abo
 - **Database**: PostgreSQL  
 - **Background Task Processing**: Celery or APScheduler  
 - **Notifications**: Twilio, Slack SDK, Amazon SES  
-- **Frontend**: (To be decided, likely React or HTMX)  
+- **Frontend**: (To be decided, likely React or HTMX)
+
+## **Architecture Diagram**
+```mermaid
+graph TD
+    subgraph Frontend
+        A[React/Vue.js Dashboard] -->|API Calls| B[FastAPI Backend]
+    end
+
+    subgraph Backend
+        B -->|Task Scheduling| C[Celery Worker]
+        B -->|Database Operations| D[PostgreSQL]
+        C -->|Task Queue| E[Redis]
+    end
+
+    subgraph Third-Party Services
+        B -->|Send Notifications| F[Twilio]
+        B -->|Send Notifications| G[SendGrid]
+        B -->|Send Notifications| H[Slack]
+    end
+
+    subgraph Monitoring
+        I[Prometheus] -->|Metrics| J[Grafana]
+    end
+
+    subgraph Deployment
+        K[Docker] -->|Orchestration| L[Kubernetes]
+    end
+
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#f96,stroke:#333,stroke-width:2px
+    style D fill:#6f9,stroke:#333,stroke-width:2px
+    style E fill:#f66,stroke:#333,stroke-width:2px
+    style F fill:#69f,stroke:#333,stroke-width:2px
+    style G fill:#69f,stroke:#333,stroke-width:2px
+    style H fill:#69f,stroke:#333,stroke-width:2px
+    style I fill:#f9f,stroke:#333,stroke-width:2px
+    style J fill:#f9f,stroke:#333,stroke-width:2px
+    style K fill:#6f9,stroke:#333,stroke-width:2px
+    style L fill:#6f9,stroke:#333,stroke-width:2px
+```
 
 ## **Current Status**  
 The project is in its early development stages. Core features such as uptime monitoring and SSL checks are being prototyped.  
