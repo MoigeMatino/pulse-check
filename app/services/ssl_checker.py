@@ -4,6 +4,8 @@ import socket
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from typing import Dict
+from core.models import SSLLog
+from sqlmodel import Session
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +20,7 @@ class SSLCheckerService:
         """
         self.warning_threshold_days = warning_threshold_days
 
-    async def check_ssl_status(self, url: str) -> Dict:
+    async def check_ssl_status(self, url: str, website_id: str, db: Session) -> Dict:
         """
         Check SSL certificate status for a single url.
 
@@ -41,6 +43,17 @@ class SSLCheckerService:
                     expiry_date = cert.not_valid_after
                     days_remaining = (expiry_date - datetime.now()).days
                     issuer = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
+                    
+                    # Log the SSL check result
+                    ssl_log = SSLLog(
+                        website_id=website_id,
+                        valid_until=expiry_date,
+                        issuer=issuer,
+                        is_valid=True,
+                        error=None
+                    )
+                    db.add(ssl_log)
+                    db.commit()
 
                     return {
                         'valid': True,
@@ -53,8 +66,18 @@ class SSLCheckerService:
 
         except Exception as e:
             logger.error(f"Error checking SSL status for {url}: {e}")
+            # Log the failed SSL check
+            ssl_log = SSLLog(
+                website_id=website_id,
+                valid_until=None,
+                issuer=None,
+                is_valid=False,
+                error=str(e)
+            )
+            db.add(ssl_log)
+            db.commit()
+            
             return {
-                #TODO: consider appropriate values for rhe return dict
                 'valid': False,
                 'expiry_date': None,
                 'days_remaining': None,
