@@ -20,7 +20,7 @@ class UserRead(BaseModel):
     phone_number: str | None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class WebsiteCreate(BaseModel):
     url: HttpUrl
@@ -40,4 +40,30 @@ class WebsiteRead(BaseModel):
     created_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+        
+class SSLStatusResponse(BaseModel):
+    valid: bool
+    expiry_date: datetime | None = None
+    days_remaining: int | None = None
+    issuer: str | None = None
+    needs_renewal: bool | None = None
+    error: str | None = None
+    
+    class Config:
+        from_attributes = True
+        
+
+class SSLLogResponse(BaseModel):
+    
+    id: int
+    website_id: str
+    valid_until: datetime | None = None
+    issuer: str | None = None
+    is_valid: bool
+    error: str | None = None
+    timestamp: datetime
+
+    class Config:
+        from_attributes = True
+    
