@@ -1,4 +1,5 @@
 from datetime import datetime
+import anyio
 import ssl
 import socket
 from cryptography import x509
@@ -55,7 +56,9 @@ class SSLCheckerService:
         try:
             # Create SSL context
             context = ssl.create_default_context()
-            with socket.create_connection((domain, 443)) as sock:
+            
+            # Establish an async TCP connection
+            async with await anyio.connect_tcp(domain, 443) as sock:
                 with context.wrap_socket(sock, server_hostname=domain) as ssock:
                     cert_binary = ssock.getpeercert(binary_form=True)
                     cert = x509.load_der_x509_certificate(

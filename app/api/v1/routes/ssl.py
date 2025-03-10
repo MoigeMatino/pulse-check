@@ -21,7 +21,6 @@ async def check_website_ssl(
     """
     website = get_website_by_id(db, website_id)
     if not website:
-            # Raise an HTTPException if the website is not found
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"website with id {website_id} not found",
