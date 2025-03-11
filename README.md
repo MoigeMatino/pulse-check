@@ -70,6 +70,28 @@ graph TD
     style L fill:#6f9,stroke:#333,stroke-width:2px
 ```
 
+## Architecture & Flow
+
+ - Monitoring Service: Handles periodic checks for uptime and SSL status.
+ - Notification Service: Manages sending alerts via SMS, email, or Slack.
+ - API Layer: Exposes endpoints for user interaction (e.g., adding websites, setting thresholds).
+ - Frontend: Dashboard for users to view data (can be built using React, HTMX, or another framework).
+ - Database: Stores user data, registered applications, alert configurations, and logs.
+
+   ### Key Components:
+
+    - Scheduler: Periodically triggers uptime and SSL checks (e.g., Celery, APScheduler).
+    - Worker Queue: Ensures scalable and asynchronous processing of tasks (e.g., Redis + Celery).
+    - Database: PostgreSQL for structured data storage.
+    - Notification Integrations: Use libraries or APIs for Twilio (SMS), Amazon SES (email), and Slack.
+
+   ### Flow:
+
+    - Users register and add websites with configurations (alert preferences, thresholds).
+    - Scheduler triggers monitoring tasks periodically.
+    - Monitoring tasks log results in the database and trigger notifications if conditions are met.
+    - Dashboard retrieves data from the database to display application status and alert history.
+
 ## **Current Status**  
 The project is in its early development stages. Core features such as uptime monitoring and SSL checks are being prototyped.  
 
