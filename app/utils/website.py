@@ -1,6 +1,6 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
-from app.core.models import Website
+from app.api.v1.models import Website
 
 def get_website_by_id(db: Session, website_id: str):
     """

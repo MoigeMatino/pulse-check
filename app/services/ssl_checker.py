@@ -1,15 +1,14 @@
 from datetime import datetime
-import anyio
 import ssl
 import socket
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from typing import Dict
+from typing import Dict, Optional
 from urllib.parse import urlparse
-from core.models import SSLLog
+from app.api.v1.models import SSLLog
 from sqlmodel import Session
-from app.core.schemas import SSLStatusResponse
-from app.exceptions import InvalidURLException
+from app.api.v1.schemas import SSLStatusResponse
+from app.exceptions.ssl import InvalidURLException
 import validators
 import logging
 
@@ -18,31 +17,30 @@ logger = logging.getLogger(__name__)
 class SSLCheckerService:
     def __init__(self, warning_threshold_days: int = 30):
         """
-        Initialize the SSL checker service
+        Initialize the SSL checker service.
 
         Args:
-            warning_threshold_days (int): Number of days before expiry to trigger warnings
+            warning_threshold_days (int): Number of days before expiry to trigger warnings.
         """
         self.warning_threshold_days = warning_threshold_days
 
-    async def check_ssl_status(
+    def check_ssl_status(
         self,
         url: str,
-        website_id: str | None = None,
-        db: Session | None = None
+        website_id: Optional[str] = None,
+        db: Optional[Session] = None
     ) -> SSLStatusResponse:
         """
         Check SSL certificate status for a given website or URL.
 
         Args:
-            url (str | None): The URL to check (for ad-hoc checks).
-            website_id (str | None): The website ID (for database-driven checks).
-            db (Session | None): Database session (required for database-driven checks).
+            url (str): The URL to check.
+            website_id (Optional[str]): The website ID (for database-driven checks).
+            db (Optional[Session]): Database session (required for database-driven checks).
 
         Returns:
-            Dict: SSL status information.
+            SSLStatusResponse: SSL status information.
         """
-        
         # Validate and extract domain from URL
         if not validators.url(url):
             raise InvalidURLException("Invalid URL format")
@@ -52,13 +50,12 @@ class SSLCheckerService:
             raise InvalidURLException("Invalid URL: No domain found")
         logger.info(f"Performing SSL check for {domain}")
 
-
         try:
             # Create SSL context
             context = ssl.create_default_context()
-            
-            # Establish an async TCP connection
-            async with await anyio.connect_tcp(domain, 443) as sock:
+
+            # Establish a TCP connection
+            with socket.create_connection((domain, 443)) as sock:
                 with context.wrap_socket(sock, server_hostname=domain) as ssock:
                     cert_binary = ssock.getpeercert(binary_form=True)
                     cert = x509.load_der_x509_certificate(
@@ -69,7 +66,7 @@ class SSLCheckerService:
                     days_remaining = (expiry_date - datetime.now()).days
                     issuer = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
 
-                    # Log the SSL check result (if website_id is provided)
+                    # Log the SSL check result 
                     if website_id and db:
                         ssl_log = SSLLog(
                             website_id=website_id,
@@ -100,7 +97,7 @@ class SSLCheckerService:
             logger.error(f"Error checking SSL status for {domain}: {e}")
             error_message = str(e)
 
-        # Log the failed SSL check (if website_id is provided)
+        # Log the failed SSL check
         if website_id and db:
             ssl_log = SSLLog(
                 website_id=website_id,
@@ -121,8 +118,7 @@ class SSLCheckerService:
             'error': error_message
         }
 
-    # TODO: reconsider website type from Dict to a pydantic schema
-    async def _handle_renewal_notification(self, website: Dict, ssl_status: Dict) -> None:
+    def _handle_renewal_notification(self, website: Dict, ssl_status: Dict) -> None:
         """
         Handle SSL renewal notifications.
 
@@ -138,4 +134,4 @@ class SSLCheckerService:
         )
         logger.info(f"Sending notification for {website['url']}: {message}")
         # TODO: Integrate with NotificationService here
-        # something like await NotificationService.send_notification(website['user_id'], message)
+        # Example: NotificationService.send_notification(website['user_id'], message)
