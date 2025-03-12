@@ -5,7 +5,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from typing import Dict, Optional
 from urllib.parse import urlparse
-from core.models import SSLLog
+from app.core.models import SSLLog
 from sqlmodel import Session
 from app.core.schemas import SSLStatusResponse
 from app.exceptions import InvalidURLException
