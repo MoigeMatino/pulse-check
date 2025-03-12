@@ -3,10 +3,10 @@ from sqlmodel import Session
 from typing import List
 
 from app.services.ssl_checker import SSLCheckerService
-from app.core.schemas import SSLStatusResponse, SSLLogResponse
-from app.db import get_db
-from app.api.v1.utils.website import get_website_by_id
-from app.api.v1.utils.ssl import get_ssl_logs_by_website_id
+from app.api.v1.schemas import SSLStatusResponse, SSLLogResponse
+from app.dependencies.db import get_db
+from app.utils.website import get_website_by_id
+from app.utils.ssl import get_ssl_logs_by_website_id
 
 router = APIRouter()
 

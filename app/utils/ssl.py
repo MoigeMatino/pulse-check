@@ -1,6 +1,6 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlmodel import Session, select
-from app.core.models import SSLLog
+from app.api.v1.models import SSLLog
 
 def get_ssl_logs_by_website_id(db: Session, website_id: str):
     """
