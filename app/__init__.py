@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.v1.routes.ssl import router as ssl_router
+from .api.v1.routes.ssl import router as ssl_router
 
 
 def create_app() -> FastAPI:
