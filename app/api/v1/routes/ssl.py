@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 from typing import List
 
-from app.services.ssl_checker import SSLCheckerService
+from app.tasks.ssl_checker import SSLCheckerService
 from app.api.v1.schemas import SSLStatusResponse, SSLLogResponse
 from app.dependencies.db import get_db
 from app.utils.website import get_website_by_id
