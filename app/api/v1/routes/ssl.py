@@ -30,7 +30,7 @@ def check_website_ssl(
     ssl_status = ssl_checker.check_ssl_status(website.url, website.id, db)
     return ssl_status
 
-@router.post("/check-ssl", response_model=SSLStatusResponse)
+@router.get("/check-ssl", response_model=SSLStatusResponse)
 def check_ssl(
     url: str,
     ssl_checker: SSLCheckerService = Depends(SSLCheckerService)
