@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 import ssl
 import socket
 from cryptography import x509
@@ -9,13 +10,13 @@ import logging
 from celery import shared_task
 from app.api.v1.models import SSLLog
 from app.api.v1.schemas import SSLStatusResponse
-from app.exceptions import InvalidURLException
+from app.exceptions.ssl import InvalidURLException
 from app.dependencies.db import SessionLocal
 
 logger = logging.getLogger(__name__)
 
 @shared_task
-def check_ssl_status_task(url: str, website_id: str | None = None) -> SSLStatusResponse:
+def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStatusResponse:
     """
     Celery task to check SSL certificate status for a given website or URL
     """

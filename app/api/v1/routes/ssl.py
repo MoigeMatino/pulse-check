@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
-from typing import List
+from typing import List, Dict
 
-from app.tasks.ssl_checker import SSLCheckerService
+from app.tasks.ssl_checker import check_ssl_status_task
 from app.api.v1.schemas import SSLStatusResponse, SSLLogResponse
 from app.dependencies.db import get_db
 from app.utils.website import get_website_by_id
@@ -10,14 +10,13 @@ from app.utils.ssl import get_ssl_logs_by_website_id
 
 router = APIRouter()
 
-@router.post("/websites/{website_id}/check-ssl", response_model=SSLStatusResponse)
+@router.post("/websites/{website_id}/check-ssl", response_model=Dict[str, str])
 def check_website_ssl(
     website_id: str,
-    db: Session = Depends(get_db),
-    ssl_checker: SSLCheckerService = Depends(SSLCheckerService)
-) -> SSLStatusResponse:
+    db: Session = Depends(get_db)
+) -> Dict[str, str]:
     """
-    Manually trigger an SSL check for a specific website
+    Trigger an SSL check for a specific website. The result will be available in logs
     """
     website = get_website_by_id(db, website_id)
     if not website:
@@ -25,22 +24,21 @@ def check_website_ssl(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Website with id {website_id} not found",
         )
-    
-    # Perform the SSL check synchronously
-    ssl_status = ssl_checker.check_ssl_status(website.url, website.id, db)
-    return ssl_status
+
+    # Trigger SSL check asynchronously
+    check_ssl_status_task.delay(website.url, website.id)
+
+    return {"message": "SSL check initiated. Results will be available in logs."}
 
 @router.get("/check-ssl", response_model=SSLStatusResponse)
 def check_ssl(
-    url: str,
-    ssl_checker: SSLCheckerService = Depends(SSLCheckerService)
+    url: str
 ) -> SSLStatusResponse:
     """
-    Perform an ad-hoc SSL check for a given arbitrary URL (not stored in the database)
+    Perform an ad-hoc SSL check for an arbitrary URL (not stored in the database)
+    This runs synchronously and returns the result immediately
     """
-    # Perform the SSL check synchronously
-    ssl_status = ssl_checker.check_ssl_status(url=url)
-    return ssl_status
+    return check_ssl_status_task(url)
 
 @router.get("/websites/{website_id}/ssl-logs", response_model=List[SSLLogResponse])
 def get_ssl_logs(
