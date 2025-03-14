@@ -1,7 +1,8 @@
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.dependencies.settings import get_settings
-from app.api.v1.models import * # noqa: F401
+from app.api.v1.models import SSLLog, Website, UptimeLog, User, NotificationPreference # noqa: F401
 
 settings = get_settings()
 
@@ -12,9 +13,13 @@ DATABASE_URL = (
 
 engine = create_engine(DATABASE_URL, echo=True)
 
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=Session)
 def get_db():
-    with Session(engine) as session:
-        yield session
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # don't need this now, alembic got it handled
 # def init_db():
