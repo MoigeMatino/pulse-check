@@ -1,5 +1,5 @@
 from sqlmodel import SQLModel, Field, Relationship
-from typing import List
+from typing import List, Optional
 from uuid import uuid4
 from enum import Enum
 from datetime import datetime, timezone
@@ -38,6 +38,8 @@ class NotificationPreference(SQLModel, table=True):
     notification_type: NotificationType
     is_enabled: bool = Field(default=True)
     threshold_minutes: int = Field(default=5) # alert after X minutes of downtime
+    
+    user: Optional[User] = Relationship(back_populates="notification_preferences")
 
 class UptimeLog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
