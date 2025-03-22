@@ -83,10 +83,24 @@ services:
       - .env
     volumes:
       - .:/app
-    
+
+  celery-beat:
+    build:
+      context: .
+    command: celery -A app.core.worker.celery_app beat --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - redis
+      - db
+    user: appuser
+    volumes:
+      - celery-beat-data:/var/run/celery  # Persist the schedule file
 
 volumes:
   pg-data:
+  celery-beat-data:
 
 
 
