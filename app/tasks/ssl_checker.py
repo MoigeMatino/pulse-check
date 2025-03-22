@@ -1,5 +1,7 @@
 from datetime import datetime
 from typing import Optional
+from app.core.worker import celery_app
+from app.utils.website import get_all_websites
 import ssl
 import socket
 from cryptography import x509
@@ -15,7 +17,7 @@ from app.dependencies.db import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-@shared_task
+@celery_app.task
 def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStatusResponse:
     """
     Celery task to check SSL certificate status for a given website or URL
@@ -91,3 +93,16 @@ def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStat
                 db.commit()
 
         return result
+    
+@celery_app.task
+def periodic_ssl_check():
+    """
+    Periodic task to check SSL status for all websites in the database
+    Works well when the number of websites to be checked is small
+    If the number of website grows, might be better to check the active
+    websites only
+    """
+    with SessionLocal() as db:
+        websites = get_all_websites(db)
+        for website in websites:
+            check_ssl_status_task.delay(website.url, website.id)

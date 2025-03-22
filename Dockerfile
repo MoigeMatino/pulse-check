@@ -24,6 +24,9 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
+# Create the celerybeat directory and set ownership
+RUN mkdir -p /var/run/celery && chown appuser:appuser /var/run/celery
+
 # Download dependencies as a separate step to take advantage of Docker's caching.
 # Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
@@ -34,6 +37,8 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 # Switch to the non-privileged user to run the application.
 USER appuser
+
+
 
 # Copy the source code into the container.
 COPY . .
