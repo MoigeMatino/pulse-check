@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session
 from typing import List, Dict
 
@@ -6,7 +6,7 @@ from app.tasks.ssl_checker import check_ssl_status_task
 from app.api.v1.schemas import SSLStatusResponse, SSLLogResponse
 from app.dependencies.db import get_db
 from app.utils.website import get_website_by_id
-from app.utils.ssl import get_ssl_logs_by_website_id
+from app.utils.ssl import all_logs_query,valid_logs_query
 
 router = APIRouter()
 
@@ -43,15 +43,24 @@ def check_ssl(
 @router.get("/websites/{website_id}/ssl-logs", response_model=List[SSLLogResponse])
 def get_ssl_logs(
     website_id: str,
+    is_valid: bool | None = Query(None, description="Filter logs by validity"),
     db: Session = Depends(get_db)
 ) -> List[SSLLogResponse]:
     """
     Retrieve SSL check history for a specific website
     """
-    logs = get_ssl_logs_by_website_id(db, website_id)
+    logs_query = all_logs_query(db, website_id)    
+    
+    # if filter is_valid is specified  
+    if is_valid is not None:
+        logs_query = valid_logs_query(logs_query, is_valid)
+    
+    logs = db.exec(logs_query).all()
+        
     if not logs:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SSL logs not found for this website"
         )
+    
     return logs
