@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 from sqlmodel import SQLModel, create_engine, Session
 from sqlmodel.pool import StaticPool
@@ -63,3 +64,41 @@ def user_with_notification_preference(session: Session):
 
     # Return the user and notification preference
     return user, notification_preference
+
+
+@pytest.fixture(name="test_website")
+def create_test_website(session: Session, test_db, user_with_notification_preference):
+    user, _ = user_with_notification_preference
+
+    website = Website(id="1", name="Example Website", url="https://example.com", user=user)
+    session.add(website)
+    session.commit()
+    return website
+
+@pytest.fixture(name="test_logs")
+def create_test_logs(session: Session, test_db, test_website: Website):
+    now = datetime.now(timezone.utc)
+    logs = [
+        SSLLog(
+            website_id=test_website.id,
+            valid_until=now + timedelta(days=30),
+            is_valid=True,
+            issuer="Let's Encrypt"
+        ),
+        SSLLog(
+            website_id=test_website.id,
+            valid_until=now + timedelta(days=-1),  # Expired
+            is_valid=False,
+            error="Certificate expired",
+            issuer="DigiCert"
+        ),
+        SSLLog(
+            website_id=test_website.id,
+            valid_until=now + timedelta(days=60),
+            is_valid=True,
+            issuer="Google Trust Services"
+        )
+    ]
+    session.add_all(logs)
+    session.commit()
+    return logs

@@ -66,3 +66,17 @@ def test_get_ssl_logs_not_found(client):
     response = client.get("/websites/999/ssl-logs")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "SSL logs not found for this website"}    
+    
+def test_get_valid_logs_only(client, test_logs):
+    # Test filtering only valid logs
+    response = client.get("/websites/1/ssl-logs?is_valid=true")
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert len(data) == 2
+
+def test_get_invalid_logs_only(client, test_logs):
+    # Test filtering only valid logs
+    response = client.get("/websites/1/ssl-logs?is_valid=false")
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert len(data) == 1

@@ -17,6 +17,7 @@ services:
       
     volumes:
       - ./alembic/versions:/app/alembic/versions  # Link Alembic migrations
+      - .:/app
     
 
   db:
