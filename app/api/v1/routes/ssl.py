@@ -3,7 +3,7 @@ from sqlmodel import Session
 from typing import List, Dict
 
 from app.tasks.ssl_checker import check_ssl_status_task
-from app.api.v1.schemas import SSLStatusResponse, SSLLogResponse
+from app.api.v1.schemas import PaginatedSSLLogResponse, SSLStatusResponse, SSLLogResponse
 from app.dependencies.db import get_db
 from app.utils.website import get_website_by_id
 from app.utils.ssl import all_logs_query,valid_logs_query
@@ -40,14 +40,14 @@ def check_ssl(
     """
     return check_ssl_status_task(url)
 
-@router.get("/websites/{website_id}/ssl-logs", response_model=List[SSLLogResponse])
+@router.get("/websites/{website_id}/ssl-logs", response_model=PaginatedSSLLogResponse)
 def get_ssl_logs(
     website_id: str,
     is_valid: bool | None = Query(None, description="Filter logs by validity"),
     limit: int = Query(10, ge=1, le=100, description="Number of logs to return"),
     cursor: int | None = Query(None, ge=0, description="ID of the last log from the previous page"),
     db: Session = Depends(get_db)
-) -> List[SSLLogResponse]:
+) -> PaginatedSSLLogResponse:
     """
     Retrieve SSL check history for a specific website
     """
@@ -59,7 +59,7 @@ def get_ssl_logs(
         
     # Apply cursor filter
     if cursor is not None:
-        logs_query = logs_query.filter(SSLLogResponse.id > cursor)
+        logs_query = logs_query.where(SSLLogResponse.id > cursor)
     
     # Order by id and limit results; fetch 1 extra to check for next page
     logs_query = logs_query.order_by(SSLLogResponse.id.asc()).limit(limit + 1) 
@@ -77,4 +77,4 @@ def get_ssl_logs(
         logs = logs[:-1]  # Exclude the extra log
     next_cursor = logs[-1].id if logs and has_next else None
     
-    return logs
+    return PaginatedSSLLogResponse(data=logs, next_cursor=next_cursor)
