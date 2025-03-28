@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, HttpUrl
 from datetime import datetime
 from enum import Enum
+from typing import List, Optional
 
 class NotificationType(str, Enum):
     EMAIL = "email"
@@ -67,3 +68,7 @@ class SSLLogResponse(BaseModel):
     class Config:
         from_attributes = True
     
+# New wrapper model for paginated response
+class PaginatedSSLLogResponse(BaseModel):
+    data: List[SSLLogResponse]
+    next_cursor: Optional[int] = None
