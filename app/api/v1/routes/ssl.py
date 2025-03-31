@@ -7,7 +7,7 @@ from app.api.v1.schemas import PaginatedSSLLogResponse, SSLStatusResponse, SSLLo
 from app.dependencies.db import get_db
 from app.utils.website import get_website_by_id
 from app.utils.ssl import all_logs_query,valid_logs_query
-
+from app.api.v1.models import SSLLog
 router = APIRouter()
 
 @router.post("/websites/{website_id}/check-ssl", response_model=Dict[str, str])
@@ -59,10 +59,10 @@ def get_ssl_logs(
         
     # Apply cursor filter
     if cursor is not None:
-        logs_query = logs_query.where(SSLLogResponse.id > cursor)
+        logs_query = logs_query.where(SSLLog.id > cursor)
     
     # Order by id and limit results; fetch 1 extra to check for next page
-    logs_query = logs_query.order_by(SSLLogResponse.id.asc()).limit(limit + 1) 
+    logs_query = logs_query.order_by(SSLLog.id.asc()).limit(limit + 1) 
     
     logs = db.exec(logs_query).all()
         

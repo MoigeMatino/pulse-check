@@ -2,7 +2,7 @@ from fastapi import status
 from sqlmodel import Session
 from app.api.v1.models import Website
 
-def test_check_website_ssl(client, session: Session, user_with_notification_preference, mocker):
+def test_check_website_ssl(client, test_db: Session, user_with_notification_preference, mocker):
     # Mock the Celery task
     mock_task = mocker.patch("app.tasks.ssl_checker.check_ssl_status_task.delay")
 
@@ -10,8 +10,8 @@ def test_check_website_ssl(client, session: Session, user_with_notification_pref
 
     # Add a website to the database
     website = Website(url="https://example.com", name="Example Website", user=user)
-    session.add(website)
-    session.commit()
+    test_db.add(website)
+    test_db.commit()
 
     # Trigger the SSL check
     response = client.post(f"/websites/{website.id}/check-ssl")
