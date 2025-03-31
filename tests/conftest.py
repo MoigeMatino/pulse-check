@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
-from sqlmodel import SQLModel, create_engine, Session
+from sqlmodel import SQLModel, create_engine, Session, select
 from sqlmodel.pool import StaticPool
 from app import app
 from app.dependencies.db import get_db
@@ -14,91 +14,94 @@ engine = create_engine(
     connect_args={"check_same_thread": False},  # Required for SQLite
 )
 
-# Fixture for the database session
-@pytest.fixture(name="session")
-def session_fixture():
-    """Creates a new database session for each test"""
-    with Session(engine) as session:
-        yield session
-
-# Fixture for the test database
 @pytest.fixture(scope="function")
 def test_db():
-    """Creates the test database schema"""
     SQLModel.metadata.create_all(engine)
-    yield  # Yield control to the tests
-    SQLModel.metadata.drop_all(engine)  # Clean up after the tests
+    session = Session(engine)
+    try:
+        yield session
+        session.commit()
+    finally:
+        session.close()
+        SQLModel.metadata.drop_all(engine)
+
+# Mock query functions for testing
+def mock_all_logs_query(db: Session, website_id: str):
+    return select(SSLLog).where(SSLLog.website_id == website_id)
+
+def mock_valid_logs_query(query, is_valid: bool):
+    return query.where(SSLLog.is_valid == is_valid)
 
 # Fixture for the FastAPI TestClient
 @pytest.fixture(scope="function")
-def client(test_db):
+def client(test_db, monkeypatch):
     """Provides a test client with overridden database dependency"""
-    # Override the get_db dependency to use the test database session
-    def get_db_override():
-        with Session(engine) as session:
-            yield session
-
-    app.dependency_overrides[get_db] = get_db_override
-
-    # Create a TestClient for the FastAPI app
+    
+    app.dependency_overrides[get_db] = lambda: test_db
+    monkeypatch.setattr("app.utils.ssl.all_logs_query", mock_all_logs_query)
+    monkeypatch.setattr("app.utils.ssl.valid_logs_query", mock_valid_logs_query)
+    
     with TestClient(app) as client:
         yield client
-
-    # Clear the dependency overrides after the tests
+    
     app.dependency_overrides.clear()
     
 @pytest.fixture
-def user_with_notification_preference(session: Session):
+def user_with_notification_preference(test_db: Session):
     """
     Fixture that creates a User with a NotificationPreference
     """
-    # Create a user
     user = User(name="Test User", email="testuser@email.com")
-    session.add(user)
-    session.commit()
+    test_db.add(user)
+    test_db.commit()
 
     # Create a notification preference for the user
     notification_preference = NotificationPreference(user_id=user.id, notification_type="email")
-    session.add(notification_preference)
-    session.commit()
+    test_db.add(notification_preference)
+    test_db.commit()
 
     # Return the user and notification preference
     return user, notification_preference
 
 
 @pytest.fixture(name="test_website")
-def create_test_website(session: Session, test_db, user_with_notification_preference):
+def create_test_website(test_db: Session, user_with_notification_preference):
     user, _ = user_with_notification_preference
 
     website = Website(id="1", name="Example Website", url="https://example.com", user=user)
-    session.add(website)
-    session.commit()
+    test_db.add(website)
+    test_db.commit()
     return website
 
+# Fixture for test SSL logs
 @pytest.fixture(name="test_logs")
-def create_test_logs(session: Session, test_db, test_website: Website):
+def create_test_logs(test_db: Session, test_website: Website):
     now = datetime.now(timezone.utc)
     logs = [
         SSLLog(
+            id=1,  # Explicit IDs for pagination
             website_id=test_website.id,
             valid_until=now + timedelta(days=30),
             is_valid=True,
-            issuer="Let's Encrypt"
+            issuer="Issuer1"
         ),
         SSLLog(
+            id=2,
             website_id=test_website.id,
             valid_until=now + timedelta(days=-1),  # Expired
             is_valid=False,
             error="Certificate expired",
-            issuer="DigiCert"
+            issuer="Issuer2"
         ),
         SSLLog(
+            id=3,
             website_id=test_website.id,
             valid_until=now + timedelta(days=60),
             is_valid=True,
-            issuer="Google Trust Services"
+            issuer="Issuer3"
         )
     ]
-    session.add_all(logs)
-    session.commit()
+    test_db.add_all(logs)
+    test_db.commit()
+    
     return logs
