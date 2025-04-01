@@ -1,18 +1,18 @@
 """Recreate missing migration
 
 Revision ID: 772155fc4fd5
-Revises: 
+Revises:
 Create Date: 2025-02-03 19:32:28.300917
 
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '772155fc4fd5'
+revision: str = "772155fc4fd5"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

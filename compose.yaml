@@ -14,11 +14,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      
+
     volumes:
       - ./alembic/versions:/app/alembic/versions  # Link Alembic migrations
       - .:/app
-    
+
 
   db:
     image: postgres
@@ -38,7 +38,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -55,7 +55,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
 
   redis:
     image: redis:alpine
@@ -68,7 +68,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
 
   celery_worker:
     build: .
@@ -102,6 +102,3 @@ services:
 volumes:
   pg-data:
   celery-beat-data:
-
-
-

@@ -1,24 +1,28 @@
+import logging
+import socket
+import ssl
 from datetime import datetime
 from typing import Optional
-from app.core.worker import celery_app
-from app.utils.website import get_all_websites
-import ssl
-import socket
+from urllib.parse import urlparse
+
+import validators
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
-from urllib.parse import urlparse
-import validators
-import logging
-from celery import shared_task
+
 from app.api.v1.models import SSLLog
 from app.api.v1.schemas import SSLStatusResponse
-from app.exceptions.ssl import InvalidURLException
+from app.core.worker import celery_app
 from app.dependencies.db import SessionLocal
+from app.exceptions.ssl import InvalidURLException
+from app.utils.website import get_all_websites
 
 logger = logging.getLogger(__name__)
 
+
 @celery_app.task
-def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStatusResponse:
+def check_ssl_status_task(
+    url: str, website_id: Optional[str] = None
+) -> SSLStatusResponse:
     """
     Celery task to check SSL certificate status for a given website or URL
     """
@@ -42,15 +46,17 @@ def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStat
 
                 expiry_date = cert.not_valid_after
                 days_remaining = (expiry_date - datetime.now()).days
-                issuer = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
+                issuer = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[
+                    0
+                ].value
 
                 result = {
-                    'valid': True,
-                    'expiry_date': expiry_date.isoformat(),
-                    'days_remaining': days_remaining,
-                    'issuer': issuer,
-                    'needs_renewal': days_remaining <= 30,  # Example threshold
-                    'error': None
+                    "valid": True,
+                    "expiry_date": expiry_date.isoformat(),
+                    "days_remaining": days_remaining,
+                    "issuer": issuer,
+                    "needs_renewal": days_remaining <= 30,  # Example threshold
+                    "error": None,
                 }
 
                 # Log the result to the database (if website_id is provided)
@@ -61,7 +67,7 @@ def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStat
                             valid_until=expiry_date,
                             issuer=issuer,
                             is_valid=True,
-                            error=None
+                            error=None,
                         )
                         db.add(ssl_log)
                         db.commit()
@@ -71,12 +77,12 @@ def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStat
     except Exception as e:
         logger.error(f"Error checking SSL status for {url}: {e}")
         result = {
-            'valid': False,
-            'expiry_date': None,
-            'days_remaining': None,
-            'issuer': None,
-            'needs_renewal': None,
-            'error': str(e)
+            "valid": False,
+            "expiry_date": None,
+            "days_remaining": None,
+            "issuer": None,
+            "needs_renewal": None,
+            "error": str(e),
         }
 
         # Log the error to the database (if website_id is provided)
@@ -87,13 +93,14 @@ def check_ssl_status_task(url: str, website_id: Optional[str] = None) -> SSLStat
                     valid_until=None,
                     issuer=None,
                     is_valid=False,
-                    error=str(e)
+                    error=str(e),
                 )
                 db.add(ssl_log)
                 db.commit()
 
         return result
-    
+
+
 @celery_app.task
 def periodic_ssl_check():
     """

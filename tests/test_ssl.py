@@ -1,13 +1,14 @@
-from fastapi import status
-from sqlmodel import Session, select
 from datetime import datetime
-import pytest
-from app.api.v1.schemas import SSLStatusResponse, SSLLogResponse, PaginatedSSLLogResponse
-from app.api.v1.models import Website, SSLLog
+
+from fastapi import status
+from sqlmodel import Session
+
+from app.api.v1.models import SSLLog, Website
+from app.api.v1.schemas import SSLLogResponse, SSLStatusResponse
+
 
 # Test the /websites/{website_id}/check-ssl endpoint
 def test_check_website_ssl(client, test_db: Session, user_with_notification_preference):
-    
     user, _ = user_with_notification_preference
     # Add a website to the database
     website = Website(url="https://example.com", name="Example Website", user=user)
@@ -17,7 +18,10 @@ def test_check_website_ssl(client, test_db: Session, user_with_notification_pref
     # Trigger the SSL check
     response = client.post(f"/websites/{website.id}/check-ssl")
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {"message": "SSL check initiated. Results will be available in logs."}
+    assert response.json() == {
+        "message": "SSL check initiated. Results will be available in logs."
+    }
+
 
 # Test the /check-ssl endpoint
 def test_check_ssl(client):
@@ -29,7 +33,7 @@ def test_check_ssl(client):
     ssl_status = SSLStatusResponse(**response.json())
     assert isinstance(ssl_status, SSLStatusResponse)
     assert ssl_status.valid
-    
+
 
 # Test the /websites/{website_id}/ssl-logs endpoint
 def test_get_ssl_logs(client, test_db: Session, user_with_notification_preference):
@@ -39,7 +43,7 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
     website = Website(url="https://example.com", name="Example Website", user=user)
     test_db.add(website)
     test_db.commit()
-    
+
     ssl_log = SSLLog(
         id=4,
         website_id=website.id,
@@ -50,7 +54,7 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
     )
     test_db.add(ssl_log)
     test_db.commit()
-    
+
     # Retrieve SSL logs
     response = client.get(f"/websites/{website.id}/ssl-logs?limit=2")
     assert response.status_code == status.HTTP_200_OK
@@ -70,6 +74,7 @@ def test_get_ssl_logs_not_found(client):
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": "SSL logs not found for this website"}
 
+
 # Pagination and filtering tests
 def test_get_ssl_logs_basic_pagination(client, test_logs):
     website_id = test_logs[0].website_id
@@ -81,6 +86,7 @@ def test_get_ssl_logs_basic_pagination(client, test_logs):
     assert data["data"][1]["id"] == 2
     assert data["next_cursor"] == 2
 
+
 def test_get_ssl_logs_with_cursor(client, test_logs):
     website_id = test_logs[0].website_id
     response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&cursor=2")
@@ -89,6 +95,7 @@ def test_get_ssl_logs_with_cursor(client, test_logs):
     assert len(data["data"]) == 1  # Only 1 log left (id=3)
     assert data["data"][0]["id"] == 3
     assert data["next_cursor"] is None
+
 
 def test_get_valid_logs_only(client, test_logs):
     website_id = test_logs[0].website_id
@@ -100,6 +107,7 @@ def test_get_valid_logs_only(client, test_logs):
     assert data["data"][1]["id"] == 3
     assert data["next_cursor"] is None  # Only 2 valid logs
     assert all(log["is_valid"] for log in data["data"])
+
 
 def test_get_invalid_logs_only(client, test_logs):
     website_id = test_logs[0].website_id
