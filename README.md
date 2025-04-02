@@ -45,7 +45,7 @@ PulseCheck uses a modular architecture to ensure scalability and reliability:
 ```mermaid
 graph TD
     subgraph Frontend
-        A[Dashboard] -->|API Calls| B[FastAPI Backend]
+        A[Future Dashboard] -->|API Calls| B[FastAPI Backend]
     end
 
     subgraph Backend
@@ -56,13 +56,15 @@ graph TD
 
     subgraph Monitoring
         F[SSL Checker socket] -->|Logs| D
+        G[Uptime Checker HTTP] -->|Logs| D
         C -->|Triggers| F
+        C -->|Triggers| G
     end
 
     subgraph Notifications
-        B -->|Alerts| G[Twilio]
-        B -->|Alerts| H[Amazon SES]
-        B -->|Alerts| I[Slack]
+        B -->|Alerts| H[Twilio]
+        B -->|Alerts| I[Amazon SES]
+        B -->|Alerts| J[Slack]
     end
 
     style A fill:#f9f,stroke:#333
@@ -71,9 +73,10 @@ graph TD
     style D fill:#6f9,stroke:#333
     style E fill:#f66,stroke:#333
     style F fill:#9ff,stroke:#333
-    style G fill:#69f,stroke:#333
+    style G fill:#9ff,stroke:#333
     style H fill:#69f,stroke:#333
     style I fill:#69f,stroke:#333
+    style J fill:#69f,stroke:#333
 ```
 
 ### Flow
