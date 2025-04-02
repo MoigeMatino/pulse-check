@@ -140,8 +140,8 @@ Run tests in Docker:
 docker-compose exec app pytest -s
 ```
 
-## Contributing
-Contributions are welcome! Fork the repo and submit a PR. See the [wiki](https://github.com/yourusername/pulsecheck/wiki/Contributing) for details.
+## Documentation
+For more details, check out the [wiki](https://github.com/MoigeMatino/pulse-check/wiki).
 
 ## License
 Licensed under the [Apache License 2.0](LICENSE).
