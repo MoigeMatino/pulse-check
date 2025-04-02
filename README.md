@@ -1,113 +1,144 @@
-# PulseCheck - Uptime monitoring and SSL management system
+# PulseCheck - Uptime Monitoring and SSL Management System
 
 🚧 **UNDER DEVELOPMENT** 🚧
 
-A modern, all-in-one uptime monitoring and SSL certificate health tool designed to keep your websites and applications running smoothly. With real-time notifications via email, SMS, and Slack, PulseCheck ensures you're always informed about downtime, SSL expirations, and critical issues—so you can act fast and stay ahead.
+PulseCheck is a modern, all-in-one tool for monitoring website uptime and SSL certificate health. It provides real-time notifications via email, SMS, and Slack, ensuring you’re always aware of downtime, SSL expirations, or critical issues—so you can respond quickly and keep your services running smoothly.
 
-## **Objective**
-The goal of this project is to help businesses and individuals stay informed about the status of their applications and websites by:
-- Ensuring minimal downtime with quick alerts.
-- Proactively notifying about SSL certificate expiry.
-- Offering a centralized dashboard for status monitoring and alert management.
+## Objective
+PulseCheck aims to help businesses and individuals maintain their online presence by:
+- Minimizing downtime with proactive alerts.
+- Tracking SSL certificate expirations and notifying users in advance.
+- Offering a centralized API and (planned) dashboard for managing website status and alerts.
 
-## **Features (Planned)**
-1. **Uptime Monitoring**:
-   - Periodically checks the availability of registered websites and applications.
+## Features
+1. **Uptime Monitoring** (In Progress):
+   - Periodically checks website availability.
 2. **SSL Monitoring**:
-   - Tracks SSL certificate expiration and notifies users in advance.
-3. **Real-Time Alerts**:
-   - Sends notifications via SMS, email, and Slack when issues are detected.
-4. **Customizable Alerts**:
-   - Allow users to set alert thresholds and notification preferences.
-5. **Dashboard**:
-   - Displays application status history, SSL expiry dates, and recent alerts.
+   - Validates SSL certificates using socket-based checks.
+   - Logs results with pagination and filtering by validity status.
+3. **Real-Time Alerts** (Planned):
+   - Sends notifications via SMS, email, and Slack for detected issues.
+4. **Customizable Alerts** (Planned):
+   - Set alert thresholds and notification preferences.
+5. **Dashboard** (Planned):
+   - View status history, SSL expiry dates, and alerts.
 
-## **Technology Stack**
-- **Backend**: FastAPI (Python)
-- **Database**: PostgreSQL
-- **Background Task Processing**: Celery or APScheduler
-- **Notifications**: Twilio, Slack SDK, Amazon SES
-- **Frontend**: (To be decided, likely React or HTMX)
+## Technology Stack
+- **Backend**: FastAPI (Python 3.12+)
+- **Database**: PostgreSQL (SQLite for testing)
+- **Task Queue**: Celery with RabbitMQ
+- **SSL Checking**: Python `socket` and `ssl` libraries
+- **Notifications**: Twilio (SMS), Amazon SES (email), Slack SDK
+- **Frontend**: TBD (likely React or HTMX)
+- **Testing**: Pytest with Docker Compose
 
-## **Architecture Diagram**
+## Architecture & Flow
+PulseCheck uses a modular architecture to ensure scalability and reliability:
+
+- **Monitoring Service**: Uses `socket` to check SSL status and logs results in PostgreSQL.
+- **Task Scheduler**: Celery runs periodic SSL checks daily at midnight, managed via RabbitMQ for queuing.
+- **API Layer**: FastAPI exposes endpoints for SSL checks and log retrieval.
+- **Database**: Stores website data and SSL logs (e.g., `SSLLog` table).
+- **Notification Service** (Planned): Integrates with Twilio, SES, and Slack for alerts.
+
+### Architecture Diagram
 ```mermaid
 graph TD
     subgraph Frontend
-        A[React/Vue.js Dashboard] -->|API Calls| B[FastAPI Backend]
+        A[Dashboard] -->|API Calls| B[FastAPI Backend]
     end
 
     subgraph Backend
-        B -->|Task Scheduling| C[Celery Worker]
-        B -->|Database Operations| D[PostgreSQL]
-        C -->|Task Queue| E[Redis]
-    end
-
-    subgraph Third-Party Services
-        B -->|Send Notifications| F[Twilio]
-        B -->|Send Notifications| G[SendGrid]
-        B -->|Send Notifications| H[Slack]
+        B -->|Periodic Tasks| C[Celery Worker]
+        B -->|Database Ops| D[PostgreSQL]
+        C -->|Task Queue| E[RabbitMQ]
     end
 
     subgraph Monitoring
-        I[Prometheus] -->|Metrics| J[Grafana]
+        F[SSL Checker socket] -->|Logs| D
+        C -->|Triggers| F
     end
 
-    subgraph Deployment
-        K[Docker] -->|Orchestration| L[Kubernetes]
+    subgraph Notifications
+        B -->|Alerts| G[Twilio]
+        B -->|Alerts| H[Amazon SES]
+        B -->|Alerts| I[Slack]
     end
 
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#f96,stroke:#333,stroke-width:2px
-    style D fill:#6f9,stroke:#333,stroke-width:2px
-    style E fill:#f66,stroke:#333,stroke-width:2px
-    style F fill:#69f,stroke:#333,stroke-width:2px
-    style G fill:#69f,stroke:#333,stroke-width:2px
-    style H fill:#69f,stroke:#333,stroke-width:2px
-    style I fill:#f9f,stroke:#333,stroke-width:2px
-    style J fill:#f9f,stroke:#333,stroke-width:2px
-    style K fill:#6f9,stroke:#333,stroke-width:2px
-    style L fill:#6f9,stroke:#333,stroke-width:2px
+    style A fill:#f9f,stroke:#333
+    style B fill:#bbf,stroke:#333
+    style C fill:#f96,stroke:#333
+    style D fill:#6f9,stroke:#333
+    style E fill:#f66,stroke:#333
+    style F fill:#9ff,stroke:#333
+    style G fill:#69f,stroke:#333
+    style H fill:#69f,stroke:#333
+    style I fill:#69f,stroke:#333
 ```
 
-## Architecture & Flow
+### Flow
+1. Users register websites via the API (planned UI).
+2. Celery schedules daily SSL checks at midnight using RabbitMQ.
+3. SSL status is checked with `socket`, logged in `SSLLog` model, and triggers notifications if needed.
+4. API retrieves logs with pagination and filtering.
 
- - Monitoring Service: Handles periodic checks for uptime and SSL status.
- - Notification Service: Manages sending alerts via SMS, email, or Slack.
- - API Layer: Exposes endpoints for user interaction (e.g., adding websites, setting thresholds).
- - Frontend: Dashboard for users to view data (can be built using React, HTMX, or another framework).
- - Database: Stores user data, registered applications, alert configurations, and logs.
+## Current Status
+The project is under active development. Core SSL checking and logging are implemented, with uptime monitoring and notifications in progress.
 
-   ### Key Components:
+## Getting Started
+### Prerequisites
+- Docker and Docker Compose
+- Python 3.11+
+- RabbitMQ running locally or via Docker
 
-    - Scheduler: Periodically triggers uptime and SSL checks (e.g., Celery, APScheduler).
-    - Worker Queue: Ensures scalable and asynchronous processing of tasks (e.g., Redis + Celery).
-    - Database: PostgreSQL for structured data storage.
-    - Notification Integrations: Use libraries or APIs for Twilio (SMS), Amazon SES (email), and Slack.
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/MoigeMatino/pulse-check.git
+   cd pulse-check
+   ```
+2. Set up environment (e.g., `.env` file):
+   ```
+   DATABASE_URL=postgresql://user:password@localhost:5432/pulsecheck
+   RABBITMQ_URL=amqp://guest:guest@localhost:5672//
+   ```
+3. Run with Docker Compose:
+   ```bash
+   docker-compose up --build
+   ```
 
-   ### Flow:
+### Usage
+- **Check SSL Status**:
+  ```bash
+  curl -X GET "http://localhost:8000/check-ssl?url=https://example.com"
+  ```
+  Response:
+  ```json
+  {"valid": true, "expiry_date":"2026-01-15T23:59:59","days_remaining":288,"issuer": "DigiCert Global G3 TLS ECC SHA384 2020 CA1", "needs_renewal":False,"error":None}
+  ```
 
-    - Users register and add websites with configurations (alert preferences, thresholds).
-    - Scheduler triggers monitoring tasks periodically.
-    - Monitoring tasks log results in the database and trigger notifications if conditions are met.
-    - Dashboard retrieves data from the database to display application status and alert history.
+- **Get SSL Logs**:
+  ```bash
+  curl -X GET "http://localhost:8000/websites/3/ssl-logs?limit=2"
+  ```
+  Response:
+  ```json
+  {
+    "data": [
+      {"id": 1, "website_id": "3", "timestamp": "2025-04-02T00:00:00Z", "valid_until": "2025-06-01T12:00:00Z", "issuer": "Let's Encrypt", "is_valid": true, "error": null}
+    ],
+    "next_cursor": null
+  }
+  ```
 
-## **Current Status**
-The project is in its early development stages. Core features such as uptime monitoring and SSL checks are being prototyped.
+## Testing
+Run tests in Docker:
+```bash
+docker-compose exec app pytest -s
+```
 
-## **Intentions**
-This project aims to:
-- Provide an accessible, user-friendly solution for monitoring uptime and SSL health.
-- Offer a scalable platform for small to medium-sized businesses.
-- Eventually evolve into a SaaS product with subscription tiers and advanced analytics.
+## Contributing
+Contributions are welcome! Fork the repo and submit a PR. See the [wiki](https://github.com/yourusername/pulsecheck/wiki/Contributing) for details.
 
-## **Getting Started**
-This repository will soon include setup instructions, including how to:
-1. Clone the repository.
-2. Install dependencies.
-3. Run the application locally.
-
-Stay tuned for updates!
-
-## **Contributing**
-Contributions are welcome! If you'd like to collaborate, please fork this repository and submit a pull request with your changes.
+## License
+Licensed under the [Apache License 2.0](LICENSE).
