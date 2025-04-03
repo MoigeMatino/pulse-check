@@ -27,6 +27,7 @@ def check_ssl_status_task(
     Celery task to check SSL certificate status for a given website or URL
     """
     try:
+        # TODO: add a util for url validation and call here
         # Validate and extract domain from URL
         if not validators.url(url):
             raise InvalidURLException("Invalid URL format")
