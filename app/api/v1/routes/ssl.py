@@ -13,7 +13,7 @@ from app.utils.website import get_website_by_id
 router = APIRouter()
 
 
-@router.post("/websites/{website_id}/check-ssl", response_model=Dict[str, str])
+@router.post("/websites/{website_id}/ssl-checks", response_model=Dict[str, str])
 def check_website_ssl(website_id: str, db: Session = Depends(get_db)) -> Dict[str, str]:
     """
     Trigger an SSL check for a specific website. The result will be available in logs
@@ -31,7 +31,7 @@ def check_website_ssl(website_id: str, db: Session = Depends(get_db)) -> Dict[st
     return {"message": "SSL check initiated. Results will be available in logs."}
 
 
-@router.get("/check-ssl", response_model=SSLStatusResponse)
+@router.get("/ssl-checks", response_model=SSLStatusResponse)
 def check_ssl(url: str) -> SSLStatusResponse:
     """
     Perform an ad-hoc SSL check for an arbitrary URL (not stored in the database)
