@@ -28,7 +28,8 @@ class Website(SQLModel, table=True):
     user_id: str = Field(..., foreign_key="user.id", index=True)
     url: str = Field(..., nullable=False, index=True)
     name: str = Field(..., nullable=False)  # human readable name for website
-    uptime_check_interval: int = Field(default=300)  # seconds
+    # uptime_check_interval: int = Field(default=300)  # on pause until we introduce
+    # tiered offerings, for now we take a 'determined-by-us' approach
     is_active: bool = Field(
         default=True
     )  # boolean flag to enable/ disable monitoring for website
@@ -47,6 +48,7 @@ class Website(SQLModel, table=True):
     warning_threshold_days: int = Field(
         default=30
     )  # configurable number of days for warning on ssl expiry
+    uptime_last_checked: datetime | None = Field(default=None)
     user: User | None = Relationship(back_populates="websites")
 
 

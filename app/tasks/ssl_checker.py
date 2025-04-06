@@ -111,6 +111,7 @@ def periodic_ssl_check():
     websites only
     """
     with SessionLocal() as db:
+        # TODO: check ssl only for active sites
         websites = get_all_websites(db)
         for website in websites:
             check_ssl_status_task.delay(website.url, website.id)
