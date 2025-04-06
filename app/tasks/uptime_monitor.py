@@ -28,7 +28,7 @@ def schedule_uptime_checks():
                 | (
                     Website.last_checked_at
                     <= now - timedelta(minutes=Website.frequency)
-                ),
+                ),  # check if X minutes have passed since uptime_last_checked
             )
             websites = db.exec(statement).all()
 

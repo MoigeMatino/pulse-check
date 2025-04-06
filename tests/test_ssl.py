@@ -7,7 +7,7 @@ from app.api.v1.models import SSLLog, Website
 from app.api.v1.schemas import SSLLogResponse, SSLStatusResponse
 
 
-# Test the /websites/{website_id}/check-ssl endpoint
+# Test the /websites/{website_id}/ssl-checks endpoint
 def test_check_website_ssl(client, test_db: Session, user_with_notification_preference):
     user, _ = user_with_notification_preference
     # Add a website to the database
@@ -16,17 +16,17 @@ def test_check_website_ssl(client, test_db: Session, user_with_notification_pref
     test_db.commit()
 
     # Trigger the SSL check
-    response = client.post(f"/websites/{website.id}/check-ssl")
+    response = client.post(f"/websites/{website.id}/ssl-checks")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "message": "SSL check initiated. Results will be available in logs."
     }
 
 
-# Test the /check-ssl endpoint
+# Test the /ssl-checks endpoint
 def test_check_ssl(client):
     # Perform an ad-hoc SSL check
-    response = client.get("/check-ssl", params={"url": "https://example.com"})
+    response = client.get("/ssl-checks", params={"url": "https://example.com"})
     assert response.status_code == status.HTTP_200_OK
 
     # Validate the response schema
