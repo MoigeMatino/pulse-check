@@ -92,8 +92,8 @@ The project is under active development. Core SSL checking and logging are imple
 ### Prerequisites
 - Docker and Docker Compose
 - Python 3.11+
-- RabbitMQ running locally or via Docker
-- PostgreSQL 9.4+ with the uuid-ossp extension enabled (for UUID generation)
+- RabbitMQ Message broker for Celery tasks (e.g., via `docker run -d -p 5672:5672 rabbitmq:3`)
+- PostgreSQL Production database, with the `uuid-ossp` extension enabled for UUID generation (required for schema)
 
 ### Installation
 1. Clone the repository:
@@ -142,6 +142,12 @@ The project is under active development. Core SSL checking and logging are imple
     "next_cursor": null
   }
   ```
+### Troubleshooting
+
+- Migration Errors: If alembic upgrade head fails:
+     - Ensure the `uuid-ossp` extension is installed (see step 4 above).
+     - Reset the database with `docker-compose down -v` and retry the installation steps.
+- Database Connection: Verify `DATABASE_URL` matches your PostgreSQL setup.
 
 ## Testing
 Run tests in Docker:
