@@ -11,30 +11,32 @@ from app.core.worker import celery_app
 from app.dependencies.db import SessionLocal
 from app.exceptions.ssl import InvalidURLException
 
+UPTIME_CHECK_INTERVAL_MINUTES = 5  # Interval for uptime checks in minutes
+
 
 @celery_app.task
 def schedule_uptime_checks():
     """Periodically check websites that are due for an uptime check."""
 
     # Fetch websites that need to be checked
-    # Check if the website is active and if the last check was more than the frequency
-    # or if it has never been checked
+    # Check if the website is active and if the last check was more than
+    # the UPTIME_CHECK_INTERVAL_MINUTES or if it has never been checked
     try:
         with SessionLocal() as db:
             now = datetime.now(timezone.utc)
             statement = select(Website).where(
                 Website.is_active.is_(True),
-                Website.last_checked_at.is_(None)
+                Website.uptime_last_checked.is_(None)
                 | (
-                    Website.last_checked_at
-                    <= now - timedelta(minutes=Website.frequency)
+                    Website.uptime_last_checked
+                    <= now - timedelta(minutes=UPTIME_CHECK_INTERVAL_MINUTES)
                 ),  # check if X minutes have passed since uptime_last_checked
             )
             websites = db.exec(statement).all()
 
             for website in websites:
                 check_website_uptime.delay(website.id, website.url)
-                website.last_checked_at = now
+                website.uptime_last_checked = now
                 db.add(website)
 
             db.commit()
