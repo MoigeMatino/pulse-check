@@ -93,6 +93,7 @@ The project is under active development. Core SSL checking and logging are imple
 - Docker and Docker Compose
 - Python 3.11+
 - RabbitMQ running locally or via Docker
+- PostgreSQL 9.4+ with the uuid-ossp extension enabled (for UUID generation)
 
 ### Installation
 1. Clone the repository:
@@ -108,6 +109,14 @@ The project is under active development. Core SSL checking and logging are imple
 3. Run with Docker Compose:
    ```bash
    docker-compose up --build
+   ```
+4. Enable the `uuid-ossp` extension in PostgreSQL:
+   ```bash
+   docker-compose exec app psql -U user -d db_name -c "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";"
+   ```
+5. Apply database migrations:
+   ```bash
+   docker-compose exec app alembic upgrade head
    ```
 
 ### Usage
