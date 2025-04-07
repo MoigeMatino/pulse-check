@@ -1,7 +1,8 @@
 from urllib.parse import urlparse
 
 import validators
-from exceptions.ssl import InvalidURLException
+
+from app.exceptions.ssl import InvalidURLException
 
 
 def validate_url(url: str) -> str:
