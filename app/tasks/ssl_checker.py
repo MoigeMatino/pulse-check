@@ -3,18 +3,16 @@ import socket
 import ssl
 from datetime import datetime
 from typing import Optional
-from urllib.parse import urlparse
 
-import validators
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from sqlmodel import select
 
-from app.api.v1.models import SSLLog
+from app.api.v1.models import SSLLog, Website
 from app.api.v1.schemas import SSLStatusResponse
 from app.core.worker import celery_app
 from app.dependencies.db import SessionLocal
-from app.exceptions.ssl import InvalidURLException
-from app.utils.website import get_all_websites
+from app.utils.generic import validate_url
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +25,8 @@ def check_ssl_status_task(
     Celery task to check SSL certificate status for a given website or URL
     """
     try:
-        # TODO: add a util for url validation and call here
         # Validate and extract domain from URL
-        if not validators.url(url):
-            raise InvalidURLException("Invalid URL format")
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc or parsed_url.path
-        if not domain:
-            raise InvalidURLException("Invalid URL: No domain found")
+        domain = validate_url(url)
 
         # Create SSL context
         context = ssl.create_default_context()
@@ -111,7 +103,10 @@ def periodic_ssl_check():
     websites only
     """
     with SessionLocal() as db:
-        # TODO: check ssl only for active sites
-        websites = get_all_websites(db)
+        websites = db.exec(
+            select(Website).where(
+                Website.is_active.is_(True) & Website.ssl_check_enabled.is_(True)
+            )
+        ).all()
         for website in websites:
             check_ssl_status_task.delay(website.url, website.id)
