@@ -159,4 +159,4 @@ docker-compose exec app pytest -s
 For more details, check out the [wiki](https://github.com/MoigeMatino/pulse-check/wiki).
 
 ## License
-Licensed under the [Apache License 2.0](LICENSE).
+Licensed under the [MIT License](LICENSE).
