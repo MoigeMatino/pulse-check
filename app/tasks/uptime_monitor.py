@@ -1,15 +1,13 @@
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlparse
 
 import httpx
-import validators
 from sqlalchemy.exc import OperationalError
 from sqlmodel import select
 
 from app.api.v1.models import UptimeLog, Website
 from app.core.worker import celery_app
 from app.dependencies.db import SessionLocal
-from app.exceptions.ssl import InvalidURLException
+from app.utils.generic import validate_url
 
 UPTIME_CHECK_INTERVAL_MINUTES = 5  # Interval for uptime checks in minutes
 
@@ -52,16 +50,11 @@ def check_website_uptime(url: str, website_id: str):
     """
     Periodically checks the uptime of a website.
     """
+    # validate url
+    domain = validate_url(url)
+
     # Ping website
     try:
-        # TODO: add a util for url validation and call here
-        if not validators.url(url):
-            raise InvalidURLException("Invalid URL format")
-        parsed_url = urlparse(url)
-        domain = parsed_url.netloc or parsed_url.path
-        if not domain:
-            raise InvalidURLException("Invalid URL: No domain found")
-
         with httpx.Client(timeout=10.0) as client:
             response = client.get(domain)
             is_up = response.status_code == 200
@@ -87,5 +80,5 @@ def check_website_uptime(url: str, website_id: str):
 
         db.add(uptime_log)
         db.commit()
-
+    # define uptime log response schema
     return {"website_id": website_id, "is_up": is_up, "response_time": response_time}

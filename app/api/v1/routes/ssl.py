@@ -24,7 +24,17 @@ def check_website_ssl(website_id: str, db: Session = Depends(get_db)) -> Dict[st
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Website with id {website_id} not found",
         )
-    # TODO: check if ssl_check_enabled is True and website is active
+    # Check if ssl_check_enabled is True and website is active
+    if not website.ssl_check_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"SSL checks are disabled for website {website_id}",
+        )
+    if not website.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Website {website_id} is inactive",
+        )
     # Trigger SSL check asynchronously
     check_ssl_status_task.delay(website.url, website.id)
 
