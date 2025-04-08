@@ -64,6 +64,7 @@ class NotificationPreference(SQLModel, table=True):
 
 class UptimeLog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    # TODO: add index to website_id and timestamp
     website_id: str = Field(..., foreign_key="website.id")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_up: bool
