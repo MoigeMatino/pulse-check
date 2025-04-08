@@ -1,8 +1,8 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
-from pydantic import BaseModel, EmailStr, HttpUrl
+from pydantic import BaseModel, EmailStr, HttpUrl, field_validator
 
 
 class NotificationType(str, Enum):
@@ -28,23 +28,31 @@ class UserRead(BaseModel):
         from_attributes = True
 
 
-class WebsiteCreate(BaseModel):
-    url: HttpUrl
+class WebsiteBase(BaseModel):
+    url: str  # Base has str, not HttpUrl, for DB compatibility
     name: str
-    check_interval: int | None = 300
-    is_active: int | bool = True
-    ssl_check_enabled: int | bool = True
+    check_interval: Optional[int] = 300  # Default 5 minutes (300 seconds)
+    is_active: Union[int, bool] = True  # Accept int or bool, normalize later
+    ssl_check_enabled: Union[int, bool] = True
+
+    @field_validator("is_active", "ssl_check_enabled", mode="before")
+    def normalize_bool(cls, v):
+        """Convert int (0/1) to bool if needed"""
+        return bool(v) if isinstance(v, int) else v
 
 
-class WebsiteRead(BaseModel):
+class WebsiteCreate(WebsiteBase):
+    url: HttpUrl
+
+
+class WebsiteRead(WebsiteBase):
     id: str
     user_id: str
-    url: HttpUrl
-    name: str
-    check_interval: int
-    is_active: bool
-    ssl_check_enabled: bool
     created_at: datetime
+    ssl_expiry_date: Optional[datetime]
+    ssl_last_checked: Optional[datetime]
+    warning_threshold_days: int
+    uptime_last_checked: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -79,3 +87,16 @@ class SSLLogResponse(BaseModel):
 class PaginatedSSLLogResponse(BaseModel):
     data: List[SSLLogResponse]
     next_cursor: Optional[int] = None
+
+
+class UptimeLogResponse(BaseModel):
+    id: int
+    website_id: str
+    timestamp: datetime
+    is_up: bool
+    status_code: Optional[int]
+    response_time: Optional[float]
+    error_message: Optional[str]
+
+    class Config:
+        from_attributes = True
