@@ -1,4 +1,5 @@
-from typing import List
+from datetime import datetime
+from typing import Optional
 
 from sqlmodel import Session, select
 
@@ -47,14 +48,29 @@ def get_all_websites(db: Session):
 
 
 def get_uptime_logs(
-    db: Session, website_id: str, limit: int = 10, offset: int = 0
-) -> List[UptimeLog]:
-    """Fetch uptime logs for a website with pagination."""
-    query = (
-        select(UptimeLog)
-        .where(UptimeLog.website_id == website_id)
-        .order_by(UptimeLog.timestamp.desc())
-        .limit(limit)
-        .offset(offset)
-    )
-    return db.exec(query).all()
+    db: Session,
+    website_id: str,
+    after: Optional[datetime] = None,
+    limit: int = 10,
+    is_up: Optional[bool] = None,
+) -> dict:
+    query = select(UptimeLog).where(UptimeLog.website_id == website_id)
+    if is_up is not None:
+        query = query.where(UptimeLog.is_up == is_up)
+    if after:
+        query = query.where(UptimeLog.timestamp > after)
+
+    # Fetch one extra to check if more exist
+    query = query.order_by(UptimeLog.timestamp.asc()).limit(limit + 1)
+    logs = db.exec(query).all()
+
+    # Split results
+    has_next = len(logs) > limit
+    logs = logs[:limit]  # Trim to requested limit
+
+    next_cursor = logs[-1].timestamp if logs and has_next else None
+    return {
+        "data": logs,
+        "next_cursor": next_cursor,
+        "has_next": has_next,
+    }

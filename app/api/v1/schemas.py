@@ -100,3 +100,9 @@ class UptimeLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class PaginatedUptimeLogResponse(BaseModel):
+    data: List[UptimeLogResponse]
+    next_cursor: Optional[datetime] = None
+    has_next: bool = False  # More logs available?

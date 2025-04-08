@@ -1,9 +1,15 @@
-from typing import List
+from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
-from app.api.v1.schemas import UptimeLogResponse, WebsiteCreate, WebsiteRead
+from app.api.v1.schemas import (
+    PaginatedUptimeLogResponse,
+    UptimeLogResponse,
+    WebsiteCreate,
+    WebsiteRead,
+)
 from app.dependencies.db import get_db
 from app.utils.website import (
     create_website,
@@ -33,21 +39,16 @@ def create_website_endpoint(
     return new_website
 
 
-@router.get("/{website_id}/uptime-logs", response_model=List[UptimeLogResponse])
+@router.get("/{website_id}/uptime-logs", response_model=PaginatedUptimeLogResponse)
 def get_uptime_logs_endpoint(
     website_id: str,
-    limit: int = 10,
-    offset: int = 0,
+    after: Optional[datetime] = Query(None),
+    limit: int = Query(10, ge=1, le=100),
+    is_up: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
-) -> List[UptimeLogResponse]:
-    """
-    Retrieve uptime logs for a specific website with pagination
-    """
+) -> UptimeLogResponse:
     website = get_website_by_id(db, website_id)
     if not website:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Website with id {website_id} not found",
-        )
-    logs = get_uptime_logs(db, website_id, limit, offset)
-    return logs
+        raise HTTPException(status_code=404, detail="Website not found")
+    result = get_uptime_logs(db, website_id, after=after, limit=limit, is_up=is_up)
+    return PaginatedUptimeLogResponse(**result)
