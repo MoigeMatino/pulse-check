@@ -74,3 +74,18 @@ def get_uptime_logs(
         "next_cursor": next_cursor,
         "has_next": has_next,
     }
+
+
+def update_website(
+    db: Session, website_id: str, update_data: dict
+) -> Optional[Website]:
+    """Update website fields"""
+    website = db.get(Website, website_id)
+    if not website:
+        return None
+    for key, value in update_data.items():
+        setattr(website, key, value)
+    db.add(website)
+    db.commit()
+    db.refresh(website)
+    return website

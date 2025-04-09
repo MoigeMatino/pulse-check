@@ -9,6 +9,7 @@ from app.api.v1.schemas import (
     UptimeLogResponse,
     WebsiteCreate,
     WebsiteRead,
+    WebsiteUpdate,
 )
 from app.dependencies.db import get_db
 from app.utils.website import (
@@ -16,6 +17,7 @@ from app.utils.website import (
     get_uptime_logs,
     get_website_by_id,
     get_website_by_url,
+    update_website,
 )
 
 router = APIRouter(prefix="/websites", tags=["websites"])
@@ -52,3 +54,25 @@ def get_uptime_logs_endpoint(
         raise HTTPException(status_code=404, detail="Website not found")
     result = get_uptime_logs(db, website_id, after=after, limit=limit, is_up=is_up)
     return PaginatedUptimeLogResponse(**result)
+
+
+# app/api/v1/endpoints/websites.py
+@router.patch("/{website_id}", response_model=WebsiteRead)
+def update_website_endpoint(
+    website_id: str,
+    website_update: WebsiteUpdate,
+    db: Session = Depends(get_db),
+) -> WebsiteRead:
+    """
+    Update a website’s details (e.g., toggle is_active).
+    """
+    update_data = website_update.model_dump(exclude_unset=True)
+    if "url" in update_data:
+        update_data["url"] = str(update_data["url"])  # Convert HttpUrl to str
+    updated_website = update_website(db, website_id, update_data)
+    if not updated_website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Website with id {website_id} not found",
+        )
+    return updated_website
