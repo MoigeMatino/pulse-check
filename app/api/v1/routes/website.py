@@ -14,6 +14,7 @@ from app.api.v1.schemas import (
 from app.dependencies.db import get_db
 from app.utils.website import (
     create_website,
+    delete_website,
     get_uptime_logs,
     get_website_by_id,
     get_website_by_url,
@@ -64,7 +65,7 @@ def update_website_endpoint(
     db: Session = Depends(get_db),
 ) -> WebsiteRead:
     """
-    Update a website’s details (e.g., toggle is_active).
+    Update website details (e.g., toggle is_active)
     """
     update_data = website_update.model_dump(exclude_unset=True)
     if "url" in update_data:
@@ -76,3 +77,21 @@ def update_website_endpoint(
             detail=f"Website with id {website_id} not found",
         )
     return updated_website
+
+
+# app/api/v1/endpoints/websites.py
+@router.delete("/{website_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_website_endpoint(
+    website_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Delete a website
+    """
+    success = delete_website(db, website_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Website with id {website_id} not found",
+        )
+    return None  # 204 returns no content

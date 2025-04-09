@@ -89,3 +89,13 @@ def update_website(
     db.commit()
     db.refresh(website)
     return website
+
+
+def delete_website(db: Session, website_id: str) -> bool:
+    """Delete a website."""
+    website = db.get(Website, website_id)
+    if not website:
+        return False
+    db.delete(website)
+    db.commit()
+    return True
