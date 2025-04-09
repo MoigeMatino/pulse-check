@@ -57,7 +57,6 @@ def get_uptime_logs_endpoint(
     return PaginatedUptimeLogResponse(**result)
 
 
-# app/api/v1/endpoints/websites.py
 @router.patch("/{website_id}", response_model=WebsiteRead)
 def update_website_endpoint(
     website_id: str,
@@ -79,7 +78,6 @@ def update_website_endpoint(
     return updated_website
 
 
-# app/api/v1/endpoints/websites.py
 @router.delete("/{website_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_website_endpoint(
     website_id: str,
