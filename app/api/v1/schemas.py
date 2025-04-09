@@ -58,6 +58,19 @@ class WebsiteRead(WebsiteBase):
         from_attributes = True
 
 
+class WebsiteUpdate(BaseModel):
+    url: Optional[HttpUrl] = None
+    name: Optional[str] = None
+    # check_interval: Optional[int] = None # on pause until we introduce
+    # tiered offerings, for now we take a 'determined-by-us' approach
+    is_active: Optional[Union[int, bool]] = None
+    ssl_check_enabled: Optional[Union[int, bool]] = None
+
+    @field_validator("is_active", "ssl_check_enabled", mode="before")
+    def normalize_bool(cls, v):
+        return bool(v) if isinstance(v, int) else v
+
+
 class SSLStatusResponse(BaseModel):
     valid: bool
     expiry_date: datetime | None = None
