@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
+from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.api.v1.models import UptimeLog, Website
@@ -47,7 +48,7 @@ def get_all_websites(db: Session):
     return websites
 
 
-def get_uptime_logs(
+def fetch_uptime_logs(
     db: Session,
     website_id: str,
     after: Optional[datetime] = None,
@@ -62,15 +63,21 @@ def get_uptime_logs(
 
     # Fetch one extra to check if more exist
     query = query.order_by(UptimeLog.timestamp.asc()).limit(limit + 1)
-    logs = db.exec(query).all()
+    uptime_logs = db.exec(query).all()
+
+    if not uptime_logs:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SSL logs not found for this website",
+        )
 
     # Split results
-    has_next = len(logs) > limit
-    logs = logs[:limit]  # Trim to requested limit
+    has_next = len(uptime_logs) > limit
+    uptime_logs = uptime_logs[:limit]  # Trim to requested limit
 
-    next_cursor = logs[-1].timestamp if logs and has_next else None
+    next_cursor = uptime_logs[-1].timestamp if has_next else None
     return {
-        "data": logs,
+        "data": uptime_logs,
         "next_cursor": next_cursor,
         "has_next": has_next,
     }

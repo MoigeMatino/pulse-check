@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine, select
+from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from app import app
@@ -31,12 +31,12 @@ def test_db():
 
 
 # Mock query functions for testing
-def mock_all_logs_query(db: Session, website_id: str):
-    return select(SSLLog).where(SSLLog.website_id == website_id)
+# def mock_all_logs_query(db: Session, website_id: str):
+#     return select(SSLLog).where(SSLLog.website_id == website_id)
 
 
-def mock_valid_logs_query(query, is_valid: bool):
-    return query.where(SSLLog.is_valid == is_valid)
+# def mock_valid_logs_query(query, is_valid: bool):
+#     return query.where(SSLLog.is_valid == is_valid)
 
 
 # Fixture for the FastAPI TestClient
@@ -45,8 +45,8 @@ def client(test_db, monkeypatch):
     """Provides a test client with overridden database dependency"""
 
     app.dependency_overrides[get_db] = lambda: test_db
-    monkeypatch.setattr("app.utils.ssl.all_logs_query", mock_all_logs_query)
-    monkeypatch.setattr("app.utils.ssl.valid_logs_query", mock_valid_logs_query)
+    # monkeypatch.setattr("app.utils.ssl.all_logs_query", mock_all_logs_query)
+    # monkeypatch.setattr("app.utils.ssl.valid_logs_query", mock_valid_logs_query)
 
     with TestClient(app) as client:
         yield client

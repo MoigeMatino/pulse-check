@@ -15,7 +15,7 @@ from app.dependencies.db import get_db
 from app.utils.website import (
     create_website,
     delete_website,
-    get_uptime_logs,
+    fetch_uptime_logs,
     get_website_by_id,
     get_website_by_url,
     update_website,
@@ -43,7 +43,7 @@ def create_website_endpoint(
 
 
 @router.get("/{website_id}/uptime-logs", response_model=PaginatedUptimeLogResponse)
-def get_uptime_logs_endpoint(
+def get_uptime_logs(
     website_id: str,
     after: Optional[datetime] = Query(None),
     limit: int = Query(10, ge=1, le=100),
@@ -52,8 +52,10 @@ def get_uptime_logs_endpoint(
 ) -> UptimeLogResponse:
     website = get_website_by_id(db, website_id)
     if not website:
-        raise HTTPException(status_code=404, detail="Website not found")
-    result = get_uptime_logs(db, website_id, after=after, limit=limit, is_up=is_up)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Website not found"
+        )
+    result = fetch_uptime_logs(db, website_id, after=after, limit=limit, is_up=is_up)
     return PaginatedUptimeLogResponse(**result)
 
 

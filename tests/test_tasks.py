@@ -18,7 +18,7 @@ def test_check_website_ssl(
     test_db.commit()
 
     # Trigger the SSL check
-    response = client.post(f"/websites/{website.id}/check-ssl")
+    response = client.post(f"/websites/{website.id}/ssl-checks")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "message": "SSL check initiated. Results will be available in logs."
