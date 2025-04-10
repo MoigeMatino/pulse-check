@@ -1,24 +1,44 @@
-from fastapi import Query
+from fastapi import HTTPException, status
 from sqlmodel import Session, select
 
 from app.api.v1.models import SSLLog
 
 
-def get_ssl_logs_by_website_id(db: Session, website_id: str):
+def fetch_ssl_logs(
+    db: Session,
+    website_id: str,
+    is_valid: bool | None = None,
+    limit: int = 10,
+    cursor: int | None = None,
+) -> dict:
     """
-    Retrieve SSL logs for a specific website by its ID
+    Retrieve SSL logs for a specific website with optional filters
     """
-    statement = select(SSLLog).where(SSLLog.website_id == website_id)
-    ssl_logs = db.exec(statement).all()
+    query = select(SSLLog).where(SSLLog.website_id == website_id)
+    if is_valid is not None:
+        query = query.where(SSLLog.is_valid == is_valid)
+    if cursor:
+        query = query.where(SSLLog.id > cursor)
 
-    return ssl_logs
+    # Order by id and limit results; fetch 1 extra to check for next page
+    query = query.order_by(SSLLog.id.asc()).limit(limit + 1)
 
+    ssl_logs = db.exec(query).all()
 
-def valid_logs_query(query: Query, is_valid: bool) -> Query:
-    """Apply validity filter to  query if specified"""
-    return query.where(SSLLog.is_valid == is_valid)
+    if not ssl_logs:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="SSL logs not found for this website",
+        )
+    # Determine if there's a next page
+    has_next = len(ssl_logs) > limit
+    if has_next:
+        ssl_logs = ssl_logs[:-1]  # Trim to exclude the extra log
 
+    next_cursor = ssl_logs[-1].id if has_next else None
 
-def all_logs_query(db: Session, website_id: str) -> Query:
-    """Create a query to retrieve SSL logs for a specific website"""
-    return select(SSLLog).where(SSLLog.website_id == website_id)
+    return {
+        "data": ssl_logs,
+        "next_cursor": next_cursor,
+        "has_next": has_next,
+    }

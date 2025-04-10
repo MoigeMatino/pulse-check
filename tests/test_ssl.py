@@ -72,7 +72,7 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
 def test_get_ssl_logs_not_found(client):
     response = client.get("/websites/999/ssl-logs?limit=2")
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "SSL logs not found for this website"}
+    assert response.json() == {"detail": "Website with id 999 not found"}
 
 
 # Pagination and filtering tests

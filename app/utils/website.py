@@ -64,10 +64,13 @@ def get_uptime_logs(
     query = query.order_by(UptimeLog.timestamp.asc()).limit(limit + 1)
     logs = db.exec(query).all()
 
+    # TODO: # Check if any logs were found and raise exception if not
     # Split results
     has_next = len(logs) > limit
     logs = logs[:limit]  # Trim to requested limit
 
+    # TODO: refactor this to check for has_next because presence of
+    # logs will have been handled
     next_cursor = logs[-1].timestamp if logs and has_next else None
     return {
         "data": logs,
