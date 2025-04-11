@@ -6,8 +6,7 @@ from sqlmodel import Session
 from app.api.v1.schemas import PaginatedSSLLogResponse, SSLStatusResponse
 from app.dependencies.db import get_db
 from app.tasks.ssl_checker import check_ssl_status_task
-from app.utils.ssl import fetch_ssl_logs
-from app.utils.website import get_website_by_id
+from app.utils.crud import fetch_ssl_logs, get_website_by_id
 
 router = APIRouter()
 

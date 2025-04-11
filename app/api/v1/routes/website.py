@@ -12,7 +12,7 @@ from app.api.v1.schemas import (
     WebsiteUpdate,
 )
 from app.dependencies.db import get_db
-from app.utils.website import (
+from app.utils.crud import (
     create_website,
     delete_website,
     fetch_uptime_logs,
