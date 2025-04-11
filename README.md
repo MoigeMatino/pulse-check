@@ -11,12 +11,12 @@ PulseCheck aims to help businesses and individuals maintain their online presenc
 - Offering a centralized API and (planned) dashboard for managing website status and alerts.
 
 ## Features
-1. **Uptime Monitoring** (In Progress):
+1. **Uptime Monitoring**:
    - Periodically checks website availability.
 2. **SSL Monitoring**:
    - Validates SSL certificates using socket-based checks.
    - Logs results with pagination and filtering by validity status.
-3. **Real-Time Alerts** (Planned):
+3. **Real-Time Alerts** (In Progress):
    - Sends notifications via SMS, email, and Slack for detected issues.
 4. **Customizable Alerts** (Planned):
    - Set alert thresholds and notification preferences.
