@@ -36,6 +36,7 @@ def fetch_ssl_logs(
         )
     # Determine if there's a next page
     has_next = len(ssl_logs) > limit
+    # TODO: improve this by trimming up to limit # of records
     if has_next:
         ssl_logs = ssl_logs[:-1]  # Trim to exclude the extra log
 
