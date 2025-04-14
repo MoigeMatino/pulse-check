@@ -71,6 +71,12 @@ class WebsiteUpdate(BaseModel):
         return bool(v) if isinstance(v, int) else v
 
 
+class WebsiteSearchResponse(BaseModel):
+    data: List[WebsiteRead]
+    next_cursor: Optional[str] = None  # Using id as cursor
+    has_next: bool = False
+
+
 class SSLStatusResponse(BaseModel):
     valid: bool
     expiry_date: datetime | None = None

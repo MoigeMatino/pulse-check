@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlmodel import Session, select
+from sqlmodel import Session, or_, select
 
 from app.api.v1.models import SSLLog, UptimeLog, Website
 from app.api.v1.schemas import WebsiteCreate
@@ -36,6 +36,7 @@ def fetch_ssl_logs(
         )
     # Determine if there's a next page
     has_next = len(ssl_logs) > limit
+    # TODO: improve this by trimming up to limit # of records
     if has_next:
         ssl_logs = ssl_logs[:-1]  # Trim to exclude the extra log
 
@@ -146,3 +147,45 @@ def delete_website(db: Session, website_id: str) -> bool:
     db.delete(website)
     db.commit()
     return True
+
+
+def search_websites(
+    db: Session,
+    query: str,
+    after: Optional[str] = None,
+    limit: int = 10,
+) -> dict:
+    """Search websites by url or name with cursor pagination"""
+    sql_query = select(Website)
+
+    # Apply search filter
+    if query:
+        search_term = f"%{query}%"
+        sql_query = sql_query.where(
+            or_(
+                Website.url.ilike(search_term),
+                Website.name.ilike(search_term),
+            )
+        )
+
+    if after:
+        sql_query = sql_query.where(Website.id > after)
+
+    sql_query = sql_query.order_by(Website.id.asc()).limit(limit + 1)
+    websites = db.exec(sql_query).all()
+
+    if not websites:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No website found matching {query}",
+        )
+
+    has_next = len(websites) > limit
+    websites = websites[:limit]
+
+    next_cursor = websites[-1].id if has_next else None
+    return {
+        "data": websites,
+        "next_cursor": next_cursor,
+        "has_next": has_next,
+    }
