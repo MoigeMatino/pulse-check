@@ -6,9 +6,9 @@ from sqlmodel import Session
 
 from app.api.v1.schemas import (
     PaginatedUptimeLogResponse,
-    UptimeLogResponse,
     WebsiteCreate,
     WebsiteRead,
+    WebsiteSearchResponse,
     WebsiteUpdate,
 )
 from app.dependencies.db import get_db
@@ -18,6 +18,7 @@ from app.utils.crud import (
     fetch_uptime_logs,
     get_website_by_id,
     get_website_by_url,
+    search_websites,
     update_website,
 )
 
@@ -49,7 +50,7 @@ def get_uptime_logs(
     limit: int = Query(10, ge=1, le=100),
     is_up: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
-) -> UptimeLogResponse:
+) -> PaginatedUptimeLogResponse:
     website = get_website_by_id(db, website_id)
     if not website:
         raise HTTPException(
@@ -95,3 +96,17 @@ def delete_website_endpoint(
             detail=f"Website with id {website_id} not found",
         )
     return None  # 204 returns no content
+
+
+@router.get("/search", response_model=WebsiteSearchResponse)
+def search_websites_endpoint(
+    q: str = Query(..., description="Search term for url or name"),
+    after: Optional[str] = Query(None, description="Fetch websites after this id"),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> WebsiteSearchResponse:
+    """
+    Search websites by url or name with cursor pagination.
+    """
+    result = search_websites(db, query=q, after=after, limit=limit)
+    return WebsiteSearchResponse(**result)
