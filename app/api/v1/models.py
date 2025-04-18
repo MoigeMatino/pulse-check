@@ -26,7 +26,9 @@ class User(SQLModel, table=True):
 class Website(SQLModel, table=True):
     id: UUID = Field(default_factory=lambda: uuid4(), primary_key=True)
     user_id: UUID = Field(..., foreign_key="user.id", index=True)
-    url: str = Field(..., nullable=False, index=True)
+    url: str = Field(
+        ..., nullable=False, index=True
+    )  # TODO: need to add unique constraint
     name: str = Field(
         ..., nullable=False, index=True
     )  # human readable name for website

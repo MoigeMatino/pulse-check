@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import List, Optional, Union
+from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, HttpUrl, field_validator
 
@@ -19,7 +20,7 @@ class UserCreate(BaseModel):
 
 
 class UserRead(BaseModel):
-    id: str
+    id: UUID
     email: EmailStr
     slack_webhook: str | None
     phone_number: str | None
@@ -29,6 +30,7 @@ class UserRead(BaseModel):
 
 
 class WebsiteBase(BaseModel):
+    user_id: UUID
     url: str  # Base has str, not HttpUrl, for DB compatibility
     name: str
     check_interval: Optional[int] = 300  # Default 5 minutes (300 seconds)
@@ -46,8 +48,7 @@ class WebsiteCreate(WebsiteBase):
 
 
 class WebsiteRead(WebsiteBase):
-    id: str
-    user_id: str
+    id: UUID
     created_at: datetime
     ssl_expiry_date: Optional[datetime]
     ssl_last_checked: Optional[datetime]
@@ -91,7 +92,7 @@ class SSLStatusResponse(BaseModel):
 
 class SSLLogResponse(BaseModel):
     id: int
-    website_id: str
+    website_id: UUID
     valid_until: datetime | None = None
     issuer: str | None = None
     is_valid: bool
@@ -110,7 +111,7 @@ class PaginatedSSLLogResponse(BaseModel):
 
 class UptimeLogResponse(BaseModel):
     id: int
-    website_id: str
+    website_id: UUID
     timestamp: datetime
     is_up: bool
     status_code: Optional[int]

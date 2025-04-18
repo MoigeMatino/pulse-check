@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
@@ -43,9 +44,10 @@ def create_website_endpoint(
     return new_website
 
 
+# TODO: add endpoint to get list of websites
 @router.get("/{website_id}/uptime-logs", response_model=PaginatedUptimeLogResponse)
 def get_uptime_logs(
-    website_id: str,
+    website_id: UUID,
     after: Optional[datetime] = Query(None),
     limit: int = Query(10, ge=1, le=100),
     is_up: Optional[bool] = Query(None),
@@ -62,7 +64,7 @@ def get_uptime_logs(
 
 @router.patch("/{website_id}", response_model=WebsiteRead)
 def update_website_endpoint(
-    website_id: str,
+    website_id: UUID,
     website_update: WebsiteUpdate,
     db: Session = Depends(get_db),
 ) -> WebsiteRead:
@@ -83,7 +85,7 @@ def update_website_endpoint(
 
 @router.delete("/{website_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_website_endpoint(
-    website_id: str,
+    website_id: UUID,
     db: Session = Depends(get_db),
 ):
     """
@@ -95,7 +97,7 @@ def delete_website_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Website with id {website_id} not found",
         )
-    return None  # 204 returns no content
+    return None
 
 
 @router.get("/search", response_model=WebsiteSearchResponse)
