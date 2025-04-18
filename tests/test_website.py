@@ -90,3 +90,30 @@ def test_update_non_existent_website(client):
     response = client.patch(f"/websites/{non_existent_id}", json=payload)
     assert response.status_code == 404
     assert f"Website with id {non_existent_id} not found" in response.json()["detail"]
+
+
+def test_delete_website(client, test_db: Session, user_with_notification_preference):
+    user, _ = user_with_notification_preference
+    normalized_url = HttpUrl("https://example.com")
+    website = Website(
+        id=uuid4(), name="Test Website", url=str(normalized_url), user=user
+    )
+    test_db.add(website)
+    test_db.commit()
+    test_db.refresh(website)
+
+    response = client.delete(f"/websites/{website.id}")
+    assert response.status_code == 204
+    assert response.content == b""  # No content expected for 204 No Content
+
+    # Verify the website has been deleted from the database
+    deleted_website = test_db.get(Website, website.id)
+    assert deleted_website is None
+
+
+def test_delete_non_existent_website(client):
+    non_existent_id = uuid4()
+
+    response = client.delete(f"/websites/{non_existent_id}")
+    assert response.status_code == 404
+    assert f"Website with id {non_existent_id} not found" in response.json()["detail"]

@@ -84,7 +84,7 @@ def update_website_endpoint(
 
 @router.delete("/{website_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_website_endpoint(
-    website_id: str,
+    website_id: UUID,
     db: Session = Depends(get_db),
 ):
     """
@@ -96,7 +96,7 @@ def delete_website_endpoint(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Website with id {website_id} not found",
         )
-    return None  # 204 returns no content
+    return None
 
 
 @router.get("/search", response_model=WebsiteSearchResponse)

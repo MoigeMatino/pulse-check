@@ -140,7 +140,7 @@ def update_website(
     return website
 
 
-def delete_website(db: Session, website_id: str) -> bool:
+def delete_website(db: Session, website_id: UUID) -> bool:
     """Delete a website"""
     website = db.get(Website, website_id)
     if not website:
