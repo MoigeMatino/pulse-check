@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -59,7 +60,7 @@ def user_with_notification_preference(test_db: Session):
     """
     Fixture that creates a User with a NotificationPreference
     """
-    user = User(name="Test User", email="testuser@email.com")
+    user = User(id=uuid4(), name="Test User", email="testuser@email.com")
     test_db.add(user)
     test_db.commit()
 
@@ -79,7 +80,7 @@ def create_test_website(test_db: Session, user_with_notification_preference):
     user, _ = user_with_notification_preference
 
     website = Website(
-        id="1", name="Example Website", url="https://example.com", user=user
+        id=uuid4(), name="Example Website", url="https://example.com", user=user
     )
     test_db.add(website)
     test_db.commit()
