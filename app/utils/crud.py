@@ -62,7 +62,7 @@ def create_website(db: Session, website: WebsiteCreate) -> Website:
     return website_in
 
 
-def get_website_by_id(db: Session, website_id: str):
+def get_website_by_id(db: Session, website_id: UUID):
     """
     Retrieve a website by its ID
     """
@@ -92,7 +92,7 @@ def get_all_websites(db: Session):
 
 def fetch_uptime_logs(
     db: Session,
-    website_id: str,
+    website_id: UUID,
     after: Optional[datetime] = None,
     limit: int = 10,
     is_up: Optional[bool] = None,

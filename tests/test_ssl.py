@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import uuid4
 
 from fastapi import status
 from sqlmodel import Session
@@ -11,7 +12,9 @@ from app.api.v1.schemas import SSLLogResponse, SSLStatusResponse
 def test_check_website_ssl(client, test_db: Session, user_with_notification_preference):
     user, _ = user_with_notification_preference
     # Add a website to the database
-    website = Website(url="https://example.com", name="Example Website", user=user)
+    website = Website(
+        id=uuid4(), url="https://example.com", name="Example Website", user=user
+    )
     test_db.add(website)
     test_db.commit()
 
@@ -40,7 +43,9 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
     user, _ = user_with_notification_preference
 
     # Add a website and SSL logs to the database
-    website = Website(url="https://example.com", name="Example Website", user=user)
+    website = Website(
+        id=uuid4(), url="https://example.com", name="Example Website", user=user
+    )
     test_db.add(website)
     test_db.commit()
 
@@ -70,14 +75,15 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
 
 # Test the /websites/{website_id}/ssl-logs endpoint for a non-existent website
 def test_get_ssl_logs_not_found(client):
-    response = client.get("/websites/999/ssl-logs?limit=2")
+    non_existent_id = uuid4()
+    response = client.get(f"/websites/{non_existent_id}/ssl-logs?limit=2")
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": "Website with id 999 not found"}
+    assert response.json() == {"detail": f"Website with id {non_existent_id} not found"}
 
 
 # Pagination and filtering tests
-def test_get_ssl_logs_basic_pagination(client, test_logs):
-    website_id = test_logs[0].website_id
+def test_get_ssl_logs_basic_pagination(client, test_ssl_logs):
+    website_id = test_ssl_logs[0].website_id
     response = client.get(f"/websites/{website_id}/ssl-logs?limit=2")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -87,8 +93,8 @@ def test_get_ssl_logs_basic_pagination(client, test_logs):
     assert data["next_cursor"] == 2
 
 
-def test_get_ssl_logs_with_cursor(client, test_logs):
-    website_id = test_logs[0].website_id
+def test_get_ssl_logs_with_cursor(client, test_ssl_logs):
+    website_id = test_ssl_logs[0].website_id
     response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&cursor=2")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -97,8 +103,8 @@ def test_get_ssl_logs_with_cursor(client, test_logs):
     assert data["next_cursor"] is None
 
 
-def test_get_valid_logs_only(client, test_logs):
-    website_id = test_logs[0].website_id
+def test_get_valid_logs_only(client, test_ssl_logs):
+    website_id = test_ssl_logs[0].website_id
     response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&is_valid=true")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -109,8 +115,8 @@ def test_get_valid_logs_only(client, test_logs):
     assert all(log["is_valid"] for log in data["data"])
 
 
-def test_get_invalid_logs_only(client, test_logs):
-    website_id = test_logs[0].website_id
+def test_get_invalid_logs_only(client, test_ssl_logs):
+    website_id = test_ssl_logs[0].website_id
     response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&is_valid=false")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()

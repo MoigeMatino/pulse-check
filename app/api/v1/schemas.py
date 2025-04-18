@@ -92,7 +92,7 @@ class SSLStatusResponse(BaseModel):
 
 class SSLLogResponse(BaseModel):
     id: int
-    website_id: str
+    website_id: UUID
     valid_until: datetime | None = None
     issuer: str | None = None
     is_valid: bool
@@ -111,7 +111,7 @@ class PaginatedSSLLogResponse(BaseModel):
 
 class UptimeLogResponse(BaseModel):
     id: int
-    website_id: str
+    website_id: UUID
     timestamp: datetime
     is_up: bool
     status_code: Optional[int]

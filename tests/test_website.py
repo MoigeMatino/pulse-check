@@ -117,3 +117,57 @@ def test_delete_non_existent_website(client):
     response = client.delete(f"/websites/{non_existent_id}")
     assert response.status_code == 404
     assert f"Website with id {non_existent_id} not found" in response.json()["detail"]
+
+
+def test_get_all_uptime_logs_success(client, test_uptime_logs):
+    website_id = test_uptime_logs[0].website_id
+    response = client.get(f"/websites/{website_id}/uptime-logs")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == len(test_uptime_logs)
+    assert data["has_next"] is False
+
+
+def test_get_uptime_logs_filtered_is_up_true(client, test_uptime_logs):
+    website_id = test_uptime_logs[0].website_id
+    response = client.get(f"/websites/{website_id}/uptime-logs?is_up=true")
+    assert response.status_code == 200
+    logs = response.json()["data"]
+    assert len(logs) == 2
+    assert all(log["is_up"] is True for log in logs)
+
+
+def test_get_uptime_logs_filtered_is_up_false(client, test_uptime_logs):
+    website_id = test_uptime_logs[0].website_id
+    response = client.get(f"/websites/{website_id}/uptime-logs?is_up=false")
+    assert response.status_code == 200
+    logs = response.json()["data"]
+    assert len(logs) == 1
+    assert all(log["is_up"] is False for log in logs)
+
+
+def test_get_uptime_logs_with_limit(client, test_uptime_logs):
+    website_id = test_uptime_logs[0].website_id
+    response = client.get(f"/websites/{website_id}/uptime-logs?limit=2")
+    assert response.status_code == 200
+    logs = response.json()
+    assert len(logs["data"]) == 2
+    assert logs["has_next"] is True
+
+
+def test_get_uptime_logs_after_timestamp(client, test_uptime_logs):
+    # Pick the timestamp of the first log
+    after_timestamp = test_uptime_logs[0].timestamp.isoformat()
+    website_id = test_uptime_logs[0].website_id
+    response = client.get(f"/websites/{website_id}/uptime-logs?after={after_timestamp}")
+    assert response.status_code == 200
+    logs = response.json()["data"]
+    assert len(logs) == 2
+    assert all(log["timestamp"] > after_timestamp for log in logs)
+
+
+def test_get_logs_for_non_existent_website(client):
+    non_existent_uuid = uuid4()
+    response = client.get(f"/websites/{non_existent_uuid}/uptime-logs")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Website not found"

@@ -44,9 +44,10 @@ def create_website_endpoint(
     return new_website
 
 
+# TODO: add endpoint to get list of websites
 @router.get("/{website_id}/uptime-logs", response_model=PaginatedUptimeLogResponse)
 def get_uptime_logs(
-    website_id: str,
+    website_id: UUID,
     after: Optional[datetime] = Query(None),
     limit: int = Query(10, ge=1, le=100),
     is_up: Optional[bool] = Query(None),

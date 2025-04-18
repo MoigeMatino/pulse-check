@@ -1,4 +1,5 @@
 from typing import Dict
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
@@ -12,7 +13,9 @@ router = APIRouter()
 
 
 @router.post("/websites/{website_id}/ssl-checks", response_model=Dict[str, str])
-def check_website_ssl(website_id: str, db: Session = Depends(get_db)) -> Dict[str, str]:
+def check_website_ssl(
+    website_id: UUID, db: Session = Depends(get_db)
+) -> Dict[str, str]:
     """
     Trigger an SSL check for a specific website. The result will be available in logs
     """
@@ -50,7 +53,7 @@ def check_ssl(url: str) -> SSLStatusResponse:
 
 @router.get("/websites/{website_id}/ssl-logs", response_model=PaginatedSSLLogResponse)
 def get_ssl_logs(
-    website_id: str,
+    website_id: UUID,
     is_valid: bool | None = Query(None, description="Filter logs by validity"),
     limit: int = Query(10, ge=1, le=100, description="Number of logs to return"),
     cursor: int

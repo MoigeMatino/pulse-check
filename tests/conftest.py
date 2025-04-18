@@ -7,8 +7,7 @@ from sqlmodel import Session, SQLModel, create_engine
 from sqlmodel.pool import StaticPool
 
 from app import app
-from app.api.v1.models import UptimeLog  # noqa: F401
-from app.api.v1.models import NotificationPreference, SSLLog, User, Website
+from app.api.v1.models import NotificationPreference, SSLLog, UptimeLog, User, Website
 from app.dependencies.db import get_db
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -88,8 +87,8 @@ def create_test_website(test_db: Session, user_with_notification_preference):
 
 
 # Fixture for test SSL logs
-@pytest.fixture(name="test_logs")
-def create_test_logs(test_db: Session, test_website: Website):
+@pytest.fixture
+def test_ssl_logs(test_db: Session, test_website: Website):
     now = datetime.now(timezone.utc)
     logs = [
         SSLLog(
@@ -113,6 +112,44 @@ def create_test_logs(test_db: Session, test_website: Website):
             valid_until=now + timedelta(days=60),
             is_valid=True,
             issuer="Issuer3",
+        ),
+    ]
+    test_db.add_all(logs)
+    test_db.commit()
+
+    return logs
+
+
+@pytest.fixture
+def test_uptime_logs(test_db: Session, test_website: Website):
+    now = datetime.now(timezone.utc)
+    logs = [
+        UptimeLog(
+            id=1,
+            website_id=test_website.id,
+            timestamp=now - timedelta(minutes=30),
+            is_up=True,
+            response_time=120,
+            status_code=200,
+            error_message=None,
+        ),
+        UptimeLog(
+            id=2,
+            website_id=test_website.id,
+            timestamp=now - timedelta(minutes=20),
+            is_up=False,
+            response_time=None,
+            status_code=None,
+            error_message="Connection timeout",
+        ),
+        UptimeLog(
+            id=3,
+            website_id=test_website.id,
+            timestamp=now - timedelta(minutes=10),
+            is_up=True,
+            response_time=98,
+            status_code=200,
+            error_message=None,
         ),
     ]
     test_db.add_all(logs)
