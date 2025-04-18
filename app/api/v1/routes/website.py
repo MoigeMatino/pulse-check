@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
@@ -62,7 +63,7 @@ def get_uptime_logs(
 
 @router.patch("/{website_id}", response_model=WebsiteRead)
 def update_website_endpoint(
-    website_id: str,
+    website_id: UUID,
     website_update: WebsiteUpdate,
     db: Session = Depends(get_db),
 ) -> WebsiteRead:

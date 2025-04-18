@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlmodel import Session, or_, select
@@ -125,7 +126,7 @@ def fetch_uptime_logs(
 
 
 def update_website(
-    db: Session, website_id: str, update_data: dict
+    db: Session, website_id: UUID, update_data: dict
 ) -> Optional[Website]:
     """Update website fields"""
     website = db.get(Website, website_id)
