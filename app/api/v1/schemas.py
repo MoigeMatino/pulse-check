@@ -59,6 +59,12 @@ class WebsiteRead(WebsiteBase):
         from_attributes = True
 
 
+class PaginatedWebsiteReadResponse(BaseModel):
+    data: List[WebsiteRead]
+    next_cursor: Optional[str] = None
+    has_next: bool = False  # More logs available?
+
+
 class WebsiteUpdate(BaseModel):
     url: Optional[HttpUrl] = None
     name: Optional[str] = None
@@ -103,6 +109,7 @@ class SSLLogResponse(BaseModel):
         from_attributes = True
 
 
+# TODO: add has_next field
 # New wrapper model for paginated response
 class PaginatedSSLLogResponse(BaseModel):
     data: List[SSLLogResponse]

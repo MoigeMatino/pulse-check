@@ -7,6 +7,7 @@ from sqlmodel import Session
 
 from app.api.v1.schemas import (
     PaginatedUptimeLogResponse,
+    PaginatedWebsiteReadResponse,
     WebsiteCreate,
     WebsiteRead,
     WebsiteSearchResponse,
@@ -17,6 +18,7 @@ from app.utils.crud import (
     create_website,
     delete_website,
     fetch_uptime_logs,
+    get_all_websites,
     get_website_by_id,
     get_website_by_url,
     search_websites,
@@ -44,7 +46,35 @@ def create_website_endpoint(
     return new_website
 
 
-# TODO: add endpoint to get list of websites
+@router.get("/", response_model=PaginatedWebsiteReadResponse)
+def get_websites_endpoint(
+    cursor: Optional[UUID] = Query(None),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> PaginatedWebsiteReadResponse:
+    """
+    Get all registered websites
+    """
+    result = get_all_websites(db, cursor=cursor, limit=limit)
+    return PaginatedWebsiteReadResponse(**result)
+
+
+@router.get("/{website_id}", response_model=WebsiteRead)
+def get_individual_website_endpoint(
+    website_id: UUID,
+    db: Session = Depends(get_db),
+) -> WebsiteRead:
+    """
+    Get website by its id
+    """
+    website = get_website_by_id(db, website_id)
+    if not website:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Website not found"
+        )
+    return website
+
+
 @router.get("/{website_id}/uptime-logs", response_model=PaginatedUptimeLogResponse)
 def get_uptime_logs(
     website_id: UUID,
@@ -103,6 +133,7 @@ def delete_website_endpoint(
 @router.get("/search", response_model=WebsiteSearchResponse)
 def search_websites_endpoint(
     q: str = Query(..., description="Search term for url or name"),
+    # TODO: type hint for after should be UUID, also change the name to cursor
     after: Optional[str] = Query(None, description="Fetch websites after this id"),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
