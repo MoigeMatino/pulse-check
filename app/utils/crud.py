@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Dict, Optional
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -30,6 +30,7 @@ def fetch_ssl_logs(
 
     ssl_logs = db.exec(query).all()
 
+    # TODO: return empty list instead of raising exception
     if not ssl_logs:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -80,14 +81,33 @@ def get_website_by_url(db: Session, url: str):
     return website
 
 
-def get_all_websites(db: Session):
+def get_all_websites(
+    db: Session, cursor: Optional[UUID] = None, limit: Optional[int] = 10
+) -> Dict:
     """
-    Retrieve all websites from the database
+    Retrieve all websites from db with cursor-based pagination
     """
-    statement = select(Website)
-    websites = db.exec(statement).all()
+    query = select(Website)
+    if cursor:
+        query = query.where(Website.id > cursor)
+    query = query.order_by(Website.id.asc()).limit(limit + 1)
+    websites = db.exec(query).all()
 
-    return websites
+    if not websites:
+        return {"data": [], "next_cursor": None, "has_next": False}
+
+    # Check if there's a next page
+    has_next = len(websites) > limit
+    if has_next:
+        websites = websites[:limit]  # Trim to requested limit
+    next_cursor = websites[-1].id if has_next else None
+    return {
+        "data": websites,
+        "next_cursor": str(
+            next_cursor
+        ),  # cast uuid website id to str for json serialization
+        "has_next": has_next,
+    }
 
 
 def fetch_uptime_logs(
@@ -107,6 +127,7 @@ def fetch_uptime_logs(
     query = query.order_by(UptimeLog.timestamp.asc()).limit(limit + 1)
     uptime_logs = db.exec(query).all()
 
+    # TODO: return empty list instead of raising exception
     if not uptime_logs:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -153,7 +174,7 @@ def delete_website(db: Session, website_id: UUID) -> bool:
 def search_websites(
     db: Session,
     query: str,
-    after: Optional[str] = None,
+    cursor: Optional[str] = None,
     limit: int = 10,
 ) -> dict:
     """Search websites by url or name with cursor pagination"""
@@ -169,8 +190,8 @@ def search_websites(
             )
         )
 
-    if after:
-        sql_query = sql_query.where(Website.id > after)
+    if cursor:
+        sql_query = sql_query.where(Website.id > cursor)
 
     sql_query = sql_query.order_by(Website.id.asc()).limit(limit + 1)
     websites = db.exec(sql_query).all()
