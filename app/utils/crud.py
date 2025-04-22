@@ -81,7 +81,9 @@ def get_website_by_url(db: Session, url: str):
     return website
 
 
-def get_all_websites(db: Session, cursor: Optional[UUID] = None, limit=10) -> Dict:
+def get_all_websites(
+    db: Session, cursor: Optional[UUID] = None, limit: Optional[int] = 10
+) -> Dict:
     """
     Retrieve all websites from db with cursor-based pagination
     """
@@ -101,7 +103,9 @@ def get_all_websites(db: Session, cursor: Optional[UUID] = None, limit=10) -> Di
     next_cursor = websites[-1].id if has_next else None
     return {
         "data": websites,
-        "next_cursor": next_cursor,
+        "next_cursor": str(
+            next_cursor
+        ),  # cast uuid website id to str for json serialization
         "has_next": has_next,
     }
 

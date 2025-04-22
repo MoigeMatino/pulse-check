@@ -54,6 +54,38 @@ def test_create_website_already_exists(
     assert "already exists" in response.json()["detail"]
 
 
+def test_get_all_websites(client, test_db: Session, user_with_notification_preference):
+    user, _ = user_with_notification_preference
+    website1 = Website(
+        id=uuid4(), name="Website 1", url="https://example.com/", user=user
+    )
+    website2 = Website(
+        id=uuid4(), name="Website 2", url="https://example.org/", user=user
+    )
+    website3 = Website(
+        id=uuid4(), name="Website 3", url="https://example.net/", user=user
+    )
+    test_db.add_all([website1, website2, website3])
+    test_db.commit()
+    test_db.refresh(website1)
+    test_db.refresh(website2)
+    test_db.refresh(website3)
+
+    # Test first page
+    response = client.get("/websites/?limit=2")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == 2
+    assert data["has_next"] is True
+
+    # Test next page
+    assert data["next_cursor"]
+    response = client.get(f"/websites/?limit=2&cursor={data['next_cursor']}")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == 1
+
+
 def test_update_website(client, test_db: Session, user_with_notification_preference):
     user, _ = user_with_notification_preference
     normalized_url = HttpUrl("https://example.com")
