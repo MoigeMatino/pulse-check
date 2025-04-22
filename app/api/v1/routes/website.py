@@ -60,7 +60,7 @@ def get_websites_endpoint(
 
 
 @router.get("/{website_id}", response_model=WebsiteRead)
-def get_individual_website_endpoint(
+def get_single_website_endpoint(
     website_id: UUID,
     db: Session = Depends(get_db),
 ) -> WebsiteRead:

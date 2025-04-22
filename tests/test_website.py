@@ -86,6 +86,23 @@ def test_get_all_websites(client, test_db: Session, user_with_notification_prefe
     assert len(data["data"]) == 1
 
 
+def test_get_single_website(
+    client, test_db: Session, user_with_notification_preference
+):
+    user, _ = user_with_notification_preference
+    website = Website(
+        id=uuid4(), name="Test Website", url="https://example.com/", user=user
+    )
+    test_db.add(website)
+    test_db.commit()
+    test_db.refresh(website)
+
+    response = client.get(f"/websites/{website.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == str(website.id)
+
+
 def test_update_website(client, test_db: Session, user_with_notification_preference):
     user, _ = user_with_notification_preference
     normalized_url = HttpUrl("https://example.com")
