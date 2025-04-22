@@ -109,11 +109,11 @@ class SSLLogResponse(BaseModel):
         from_attributes = True
 
 
-# TODO: add has_next field
 # New wrapper model for paginated response
 class PaginatedSSLLogResponse(BaseModel):
     data: List[SSLLogResponse]
     next_cursor: Optional[int] = None
+    has_next: bool = False
 
 
 class UptimeLogResponse(BaseModel):

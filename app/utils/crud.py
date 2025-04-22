@@ -174,7 +174,7 @@ def delete_website(db: Session, website_id: UUID) -> bool:
 def search_websites(
     db: Session,
     query: str,
-    after: Optional[str] = None,
+    cursor: Optional[str] = None,
     limit: int = 10,
 ) -> dict:
     """Search websites by url or name with cursor pagination"""
@@ -190,8 +190,8 @@ def search_websites(
             )
         )
 
-    if after:
-        sql_query = sql_query.where(Website.id > after)
+    if cursor:
+        sql_query = sql_query.where(Website.id > cursor)
 
     sql_query = sql_query.order_by(Website.id.asc()).limit(limit + 1)
     websites = db.exec(sql_query).all()

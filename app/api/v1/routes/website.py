@@ -133,13 +133,12 @@ def delete_website_endpoint(
 @router.get("/search", response_model=WebsiteSearchResponse)
 def search_websites_endpoint(
     q: str = Query(..., description="Search term for url or name"),
-    # TODO: type hint for after should be UUID, also change the name to cursor
-    after: Optional[str] = Query(None, description="Fetch websites after this id"),
+    cursor: Optional[UUID] = Query(None),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> WebsiteSearchResponse:
     """
     Search websites by url or name with cursor pagination.
     """
-    result = search_websites(db, query=q, after=after, limit=limit)
+    result = search_websites(db, query=q, cursor=cursor, limit=limit)
     return WebsiteSearchResponse(**result)
