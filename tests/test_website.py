@@ -264,4 +264,11 @@ def test_search_website_paginated(
     data = response.json()
     assert len(data["data"]) == 2
     assert data["has_next"] is True
-    assert data["next_cursor"] == str(website2.id)
+
+    # Test next page
+    response = client.get(
+        f"/websites/search?q=Test&cursor={data['next_cursor']}&limit=2"
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == 1
