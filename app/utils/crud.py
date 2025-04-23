@@ -174,7 +174,7 @@ def delete_website(db: Session, website_id: UUID) -> bool:
 def search_websites(
     db: Session,
     query: str,
-    cursor: Optional[str] = None,
+    cursor: Optional[UUID] = None,
     limit: int = 10,
 ) -> dict:
     """Search websites by url or name with cursor pagination"""
@@ -197,10 +197,7 @@ def search_websites(
     websites = db.exec(sql_query).all()
 
     if not websites:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No website found matching {query}",
-        )
+        return {"data": [], "next_cursor": None, "has_next": False}
 
     has_next = len(websites) > limit
     websites = websites[:limit]
@@ -208,6 +205,6 @@ def search_websites(
     next_cursor = websites[-1].id if has_next else None
     return {
         "data": websites,
-        "next_cursor": next_cursor,
+        "next_cursor": str(next_cursor),
         "has_next": has_next,
     }

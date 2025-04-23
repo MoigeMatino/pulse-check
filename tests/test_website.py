@@ -220,3 +220,26 @@ def test_get_logs_for_non_existent_website(client):
     response = client.get(f"/websites/{non_existent_uuid}/uptime-logs")
     assert response.status_code == 404
     assert response.json()["detail"] == "Website not found"
+
+
+def test_search_website_success(
+    client, test_db: Session, user_with_notification_preference
+):
+    user, _ = user_with_notification_preference
+    website1 = Website(
+        id=uuid4(), name="Test Website 1", url="https://example.com/", user=user
+    )
+    website2 = Website(
+        id=uuid4(), name="Test Website 2", url="https://example.org/", user=user
+    )
+    test_db.add_all([website1, website2])
+    test_db.commit()
+
+    response = client.get("/websites/search?q=Test")
+    import pdb
+
+    pdb.set_trace()
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == 2
+    assert data["has_next"] is False
