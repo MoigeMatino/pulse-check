@@ -236,10 +236,32 @@ def test_search_website_success(
     test_db.commit()
 
     response = client.get("/websites/search?q=Test")
-    import pdb
 
-    pdb.set_trace()
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 2
     assert data["has_next"] is False
+
+
+def test_search_website_paginated(
+    client, test_db: Session, user_with_notification_preference
+):
+    user, _ = user_with_notification_preference
+    website1 = Website(
+        id=uuid4(), name="Test Website 1", url="https://example.com/", user=user
+    )
+    website2 = Website(
+        id=uuid4(), name="Test Website 2", url="https://example.org/", user=user
+    )
+    website3 = Website(
+        id=uuid4(), name="Test Website 3", url="https://example.net/", user=user
+    )
+    test_db.add_all([website1, website2, website3])
+    test_db.commit()
+
+    response = client.get("/websites/search?q=Test&limit=2")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == 2
+    assert data["has_next"] is True
+    assert data["next_cursor"] == str(website2.id)
