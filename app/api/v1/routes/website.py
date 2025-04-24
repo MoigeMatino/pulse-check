@@ -59,6 +59,20 @@ def get_websites_endpoint(
     return PaginatedWebsiteReadResponse(**result)
 
 
+@router.get("/search", response_model=WebsiteSearchResponse)
+def search_websites_endpoint(
+    q: str = Query(..., description="Search term for url or name"),
+    cursor: Optional[UUID] = Query(None),
+    limit: int = Query(10, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> WebsiteSearchResponse:
+    """
+    Search websites by url or name with cursor pagination.
+    """
+    result = search_websites(db, query=q, cursor=cursor, limit=limit)
+    return WebsiteSearchResponse(**result)
+
+
 @router.get("/{website_id}", response_model=WebsiteRead)
 def get_single_website_endpoint(
     website_id: UUID,
@@ -128,17 +142,3 @@ def delete_website_endpoint(
             detail=f"Website with id {website_id} not found",
         )
     return None
-
-
-@router.get("/search", response_model=WebsiteSearchResponse)
-def search_websites_endpoint(
-    q: str = Query(..., description="Search term for url or name"),
-    cursor: Optional[UUID] = Query(None),
-    limit: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db),
-) -> WebsiteSearchResponse:
-    """
-    Search websites by url or name with cursor pagination.
-    """
-    result = search_websites(db, query=q, cursor=cursor, limit=limit)
-    return WebsiteSearchResponse(**result)
