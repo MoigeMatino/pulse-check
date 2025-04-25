@@ -1,8 +1,11 @@
+import re
 from urllib.parse import urlparse
 
 import validators
 
 from app.exceptions.ssl import InvalidURLException
+
+WHITELISTED_TLDS = {"local", "internal", "dev", "test"}
 
 
 def validate_url(url: str) -> str:
@@ -26,6 +29,11 @@ def validate_url(url: str) -> str:
 
     if not domain:
         raise InvalidURLException("Invalid URL: No domain found")
+
+    # Validate TLD
+    tld_match = re.search(r"\.([a-zA-Z]{2,})$", domain)
+    if not tld_match:
+        raise InvalidURLException("Invalid domain: Missing TLD (e.g., .com, .org)")
 
     if parsed_url.scheme not in ("http", "https"):
         raise InvalidURLException("URL must use http or https scheme")
