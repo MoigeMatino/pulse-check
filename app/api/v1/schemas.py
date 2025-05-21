@@ -15,6 +15,7 @@ class NotificationType(str, Enum):
 # Request and Response Schemas
 class UserCreate(BaseModel):
     email: EmailStr
+    password: str
     slack_webhook: str | None
     phone_number: str | None
 
@@ -22,6 +23,7 @@ class UserCreate(BaseModel):
 class UserRead(BaseModel):
     id: UUID
     email: EmailStr
+    is_active: str
     slack_webhook: str | None
     phone_number: str | None
 
