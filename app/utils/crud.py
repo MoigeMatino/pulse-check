@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlmodel import Session, or_, select
 
-from app.api.v1.models import SSLLog, UptimeLog, Website
+from app.api.v1.models import SSLLog, UptimeLog, User, Website
 from app.api.v1.schemas import WebsiteCreate
 
 
@@ -208,3 +208,11 @@ def search_websites(
         "next_cursor": str(next_cursor),
         "has_next": has_next,
     }
+
+
+def get_user_by_id(db: Session, user_id: UUID):
+    """
+    Retrieve a user by their ID
+    """
+    user = db.get(User, str(user_id))
+    return user
