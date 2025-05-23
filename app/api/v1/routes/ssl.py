@@ -4,7 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
+from app.api.v1.models import User
 from app.api.v1.schemas import PaginatedSSLLogResponse, SSLStatusResponse
+from app.auth import get_current_user
 from app.dependencies.db import get_db
 from app.tasks.ssl_checker import check_ssl_status_task
 from app.utils.crud import fetch_ssl_logs, get_website_by_id
@@ -14,12 +16,14 @@ router = APIRouter()
 
 @router.post("/websites/{website_id}/ssl-checks", response_model=Dict[str, str])
 def check_website_ssl(
-    website_id: UUID, db: Session = Depends(get_db)
+    website_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> Dict[str, str]:
     """
     Trigger an SSL check for a specific website. The result will be available in logs
     """
-    website = get_website_by_id(db, website_id)
+    website = get_website_by_id(db, website_id, current_user.id)
     if not website:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -59,11 +63,12 @@ def get_ssl_logs(
     cursor: int
     | None = Query(None, ge=0, description="ID of the last log from the previous page"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PaginatedSSLLogResponse:
     """
     Retrieve SSL check history for a specific website
     """
-    website = get_website_by_id(db, website_id)
+    website = get_website_by_id(db, website_id, current_user.id)
     if not website:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
