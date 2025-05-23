@@ -216,3 +216,11 @@ def get_user_by_id(db: Session, user_id: UUID):
     """
     user = db.get(User, str(user_id))
     return user
+
+
+def get_user_by_email(db: Session, email: str):
+    """
+    Retrieve a user by their email
+    """
+    user = select(User).where(User.email == email).first()
+    return user

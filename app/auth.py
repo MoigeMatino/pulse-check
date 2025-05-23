@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -10,6 +10,7 @@ from sqlmodel import Session
 from app.api.v1.models import User
 from app.dependencies.db import get_db
 from app.dependencies.settings import get_settings
+from app.exceptions.auth import InvalidCredentialsException
 from app.utils.crud import get_user_by_id
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -59,19 +60,14 @@ def verify_token(token: str) -> dict | None:
 def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
-            raise credentials_exception
+            raise InvalidCredentialsException("Could not validate credentials")
     except JWTError:
-        raise credentials_exception
+        raise InvalidCredentialsException
     user = get_user_by_id(db, user_id)
     if user is None:
-        raise credentials_exception
+        raise InvalidCredentialsException("User does not exist")
     return user
