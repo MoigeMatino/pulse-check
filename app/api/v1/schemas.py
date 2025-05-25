@@ -23,7 +23,7 @@ class UserCreate(BaseModel):
 class UserRead(BaseModel):
     id: UUID
     email: EmailStr
-    is_active: str
+    is_active: bool = True
     slack_webhook: str | None
     phone_number: str | None
 

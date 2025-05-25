@@ -6,7 +6,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
 from app.api.v1.models import User
-from app.api.v1.routes.auth import get_current_user
 from app.api.v1.schemas import (
     PaginatedUptimeLogResponse,
     PaginatedWebsiteReadResponse,
@@ -15,6 +14,7 @@ from app.api.v1.schemas import (
     WebsiteSearchResponse,
     WebsiteUpdate,
 )
+from app.auth import get_current_user
 from app.dependencies.db import get_db
 from app.utils.crud import (
     create_website,

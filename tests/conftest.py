@@ -8,6 +8,7 @@ from sqlmodel.pool import StaticPool
 
 from app import app
 from app.api.v1.models import NotificationPreference, SSLLog, UptimeLog, User, Website
+from app.auth import get_password_hash
 from app.dependencies.db import get_db
 
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -74,9 +75,41 @@ def user_with_notification_preference(test_db: Session):
     return user, notification_preference
 
 
+@pytest.fixture
+def logged_in_user(client, test_db: Session):
+    user_data = {
+        "email": "loggedinuser@email.com",
+        "password": "mysecretpassword",
+        "slack_webhook": "https://hooks.slack.com/abc",
+        "phone_number": "+1234567890",
+    }
+    hash_password = get_password_hash(user_data["password"])
+    user = User(
+        id=uuid4(),
+        name="Logged In User",
+        email=user_data["email"],
+        password_hash=hash_password,
+    )
+    test_db.add(user)
+    test_db.commit()
+    test_db.refresh(user)
+
+    # Log in to get JWT token
+    response = client.post(
+        "/auth/login",
+        data={"username": user_data["email"], "password": user_data["password"]},
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    return {"user": user, "token": token, "headers": headers}
+
+
 @pytest.fixture(name="test_website")
-def create_test_website(test_db: Session, user_with_notification_preference):
-    user, _ = user_with_notification_preference
+def create_test_website(test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
 
     website = Website(
         id=uuid4(), name="Example Website", url="https://example.com", user=user

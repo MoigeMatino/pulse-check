@@ -46,6 +46,7 @@ def check_website_ssl(
     return {"message": "SSL check initiated. Results will be available in logs."}
 
 
+# * Good candidate for api key authentication
 @router.get("/ssl-checks", response_model=SSLStatusResponse)
 def check_ssl(url: str) -> SSLStatusResponse:
     """

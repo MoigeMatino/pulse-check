@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import UUID
 
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session
 
@@ -60,13 +61,13 @@ def verify_token(token: str) -> dict | None:
 def get_current_user(
     token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
 ) -> User:
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise InvalidCredentialsException("Could not validate credentials")
-    except JWTError:
-        raise InvalidCredentialsException
+    token_data = verify_token(token)
+    if token_data is None or token_data["status"] != "valid":
+        raise InvalidCredentialsException("Invalid or expired token")
+    user_id = token_data["data"].get("sub")
+    if user_id is None:
+        raise InvalidCredentialsException("Token does not contain user ID")
+    user_id = UUID(user_id)
     user = get_user_by_id(db, user_id)
     if user is None:
         raise InvalidCredentialsException("User does not exist")
