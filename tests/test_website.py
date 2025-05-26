@@ -6,17 +6,16 @@ from sqlmodel import Session
 from app.api.v1.models import Website
 
 
-def test_create_website_success(
-    client, test_db: Session, user_with_notification_preference
-):
-    user, _ = user_with_notification_preference
+def test_create_website_success(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
 
     payload = {
         "user_id": str(user.id),
         "name": "Example",
         "url": "https://example.com/",
     }
-    response = client.post("/websites/", json=payload)
+    response = client.post("/websites/", json=payload, headers=headers)
     assert response.status_code == 201
 
     # Use Pydantic to normalize the input like the API
@@ -33,10 +32,10 @@ def test_create_website_success(
     assert str(website_in_db.url) == "https://example.com/"
 
 
-def test_create_website_already_exists(
-    client, test_db: Session, user_with_notification_preference
-):
-    user, _ = user_with_notification_preference
+def test_create_website_already_exists(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     normalized_url = str(HttpUrl("https://example.com"))
     existing_website = Website(
         id=uuid4(), name="Existing Website", url=normalized_url, user=user
@@ -49,13 +48,15 @@ def test_create_website_already_exists(
         "name": existing_website.name,
         "url": existing_website.url,
     }
-    response = client.post("/websites/", json=payload)
+    response = client.post("/websites/", json=payload, headers=headers)
     assert response.status_code == 400
     assert "already exists" in response.json()["detail"]
 
 
-def test_get_all_websites(client, test_db: Session, user_with_notification_preference):
-    user, _ = user_with_notification_preference
+def test_get_all_websites(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     website1 = Website(
         id=uuid4(), name="Website 1", url="https://example.com/", user=user
     )
@@ -72,7 +73,7 @@ def test_get_all_websites(client, test_db: Session, user_with_notification_prefe
     test_db.refresh(website3)
 
     # Test first page
-    response = client.get("/websites/?limit=2")
+    response = client.get("/websites/?limit=2", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 2
@@ -80,16 +81,18 @@ def test_get_all_websites(client, test_db: Session, user_with_notification_prefe
 
     # Test next page
     assert data["next_cursor"]
-    response = client.get(f"/websites/?limit=2&cursor={data['next_cursor']}")
+    response = client.get(
+        f"/websites/?limit=2&cursor={data['next_cursor']}", headers=headers
+    )
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 1
 
 
-def test_get_single_website(
-    client, test_db: Session, user_with_notification_preference
-):
-    user, _ = user_with_notification_preference
+def test_get_single_website(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     website = Website(
         id=uuid4(), name="Test Website", url="https://example.com/", user=user
     )
@@ -97,14 +100,16 @@ def test_get_single_website(
     test_db.commit()
     test_db.refresh(website)
 
-    response = client.get(f"/websites/{website.id}")
+    response = client.get(f"/websites/{website.id}", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(website.id)
 
 
-def test_update_website(client, test_db: Session, user_with_notification_preference):
-    user, _ = user_with_notification_preference
+def test_update_website(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     normalized_url = HttpUrl("https://example.com")
     website = Website(
         id=uuid4(), name="Test Website", url=str(normalized_url), user=user
@@ -120,7 +125,7 @@ def test_update_website(client, test_db: Session, user_with_notification_prefere
         "url": str(normalised_updated_url),
         "is_active": False,
     }
-    response = client.patch(f"/websites/{website.id}", json=payload)
+    response = client.patch(f"/websites/{website.id}", json=payload, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == "Updated Website"
@@ -128,7 +133,9 @@ def test_update_website(client, test_db: Session, user_with_notification_prefere
     assert data["is_active"] is False
 
 
-def test_update_non_existent_website(client):
+def test_update_non_existent_website(client, logged_in_user):
+    headers = logged_in_user["headers"]
+
     non_existent_id = uuid4()
     normalised_updated_url = HttpUrl("https://updated.com")
     payload = {
@@ -136,13 +143,17 @@ def test_update_non_existent_website(client):
         "url": str(normalised_updated_url),
         "is_active": False,
     }
-    response = client.patch(f"/websites/{non_existent_id}", json=payload)
+    response = client.patch(
+        f"/websites/{non_existent_id}", json=payload, headers=headers
+    )
     assert response.status_code == 404
     assert f"Website with id {non_existent_id} not found" in response.json()["detail"]
 
 
-def test_delete_website(client, test_db: Session, user_with_notification_preference):
-    user, _ = user_with_notification_preference
+def test_delete_website(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     normalized_url = HttpUrl("https://example.com")
     website = Website(
         id=uuid4(), name="Test Website", url=str(normalized_url), user=user
@@ -151,7 +162,7 @@ def test_delete_website(client, test_db: Session, user_with_notification_prefere
     test_db.commit()
     test_db.refresh(website)
 
-    response = client.delete(f"/websites/{website.id}")
+    response = client.delete(f"/websites/{website.id}", headers=headers)
     assert response.status_code == 204
     assert response.content == b""  # No content expected for 204 No Content
 
@@ -160,72 +171,94 @@ def test_delete_website(client, test_db: Session, user_with_notification_prefere
     assert deleted_website is None
 
 
-def test_delete_non_existent_website(client):
+def test_delete_non_existent_website(client, logged_in_user):
+    headers = logged_in_user["headers"]
+
     non_existent_id = uuid4()
 
-    response = client.delete(f"/websites/{non_existent_id}")
+    response = client.delete(f"/websites/{non_existent_id}", headers=headers)
     assert response.status_code == 404
     assert f"Website with id {non_existent_id} not found" in response.json()["detail"]
 
 
-def test_get_all_uptime_logs_success(client, test_uptime_logs):
+def test_get_all_uptime_logs_success(client, logged_in_user, test_uptime_logs):
+    headers = logged_in_user["headers"]
+
     website_id = test_uptime_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/uptime-logs")
+    response = client.get(f"/websites/{website_id}/uptime-logs", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == len(test_uptime_logs)
     assert data["has_next"] is False
 
 
-def test_get_uptime_logs_filtered_is_up_true(client, test_uptime_logs):
+def test_get_uptime_logs_filtered_is_up_true(client, logged_in_user, test_uptime_logs):
+    headers = logged_in_user["headers"]
+
     website_id = test_uptime_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/uptime-logs?is_up=true")
+    response = client.get(
+        f"/websites/{website_id}/uptime-logs?is_up=true", headers=headers
+    )
     assert response.status_code == 200
     logs = response.json()["data"]
     assert len(logs) == 2
     assert all(log["is_up"] is True for log in logs)
 
 
-def test_get_uptime_logs_filtered_is_up_false(client, test_uptime_logs):
+def test_get_uptime_logs_filtered_is_up_false(client, logged_in_user, test_uptime_logs):
+    headers = logged_in_user["headers"]
+
     website_id = test_uptime_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/uptime-logs?is_up=false")
+    response = client.get(
+        f"/websites/{website_id}/uptime-logs?is_up=false", headers=headers
+    )
     assert response.status_code == 200
     logs = response.json()["data"]
     assert len(logs) == 1
     assert all(log["is_up"] is False for log in logs)
 
 
-def test_get_uptime_logs_with_limit(client, test_uptime_logs):
+def test_get_uptime_logs_with_limit(client, logged_in_user, test_uptime_logs):
+    headers = logged_in_user["headers"]
+
     website_id = test_uptime_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/uptime-logs?limit=2")
+    response = client.get(
+        f"/websites/{website_id}/uptime-logs?limit=2", headers=headers
+    )
     assert response.status_code == 200
     logs = response.json()
     assert len(logs["data"]) == 2
     assert logs["has_next"] is True
 
 
-def test_get_uptime_logs_after_timestamp(client, test_uptime_logs):
+def test_get_uptime_logs_after_timestamp(client, logged_in_user, test_uptime_logs):
+    headers = logged_in_user["headers"]
+
     # Pick the timestamp of the first log
     after_timestamp = test_uptime_logs[0].timestamp.isoformat()
     website_id = test_uptime_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/uptime-logs?after={after_timestamp}")
+    response = client.get(
+        f"/websites/{website_id}/uptime-logs?after={after_timestamp}", headers=headers
+    )
     assert response.status_code == 200
     logs = response.json()["data"]
     assert len(logs) == 2
     assert all(log["timestamp"] > after_timestamp for log in logs)
 
 
-def test_get_logs_for_non_existent_website(client):
+def test_get_logs_for_non_existent_website(client, logged_in_user):
+    headers = logged_in_user["headers"]
+
     non_existent_uuid = uuid4()
-    response = client.get(f"/websites/{non_existent_uuid}/uptime-logs")
+    response = client.get(f"/websites/{non_existent_uuid}/uptime-logs", headers=headers)
     assert response.status_code == 404
     assert response.json()["detail"] == "Website not found"
 
 
-def test_search_website_success(
-    client, test_db: Session, user_with_notification_preference
-):
-    user, _ = user_with_notification_preference
+def test_search_website_success(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     website1 = Website(
         id=uuid4(), name="Test Website 1", url="https://example.com/", user=user
     )
@@ -235,7 +268,7 @@ def test_search_website_success(
     test_db.add_all([website1, website2])
     test_db.commit()
 
-    response = client.get("/websites/search?q=Test")
+    response = client.get("/websites/search?q=Test", headers=headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -243,10 +276,10 @@ def test_search_website_success(
     assert data["has_next"] is False
 
 
-def test_search_website_paginated(
-    client, test_db: Session, user_with_notification_preference
-):
-    user, _ = user_with_notification_preference
+def test_search_website_paginated(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     website1 = Website(
         id=uuid4(), name="Test Website 1", url="https://example.com/", user=user
     )
@@ -259,7 +292,7 @@ def test_search_website_paginated(
     test_db.add_all([website1, website2, website3])
     test_db.commit()
 
-    response = client.get("/websites/search?q=Test&limit=2")
+    response = client.get("/websites/search?q=Test&limit=2", headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 2
@@ -267,7 +300,7 @@ def test_search_website_paginated(
 
     # Test next page
     response = client.get(
-        f"/websites/search?q=Test&cursor={data['next_cursor']}&limit=2"
+        f"/websites/search?q=Test&cursor={data['next_cursor']}&limit=2", headers=headers
     )
     assert response.status_code == 200
     data = response.json()
