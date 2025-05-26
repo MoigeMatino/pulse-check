@@ -9,8 +9,10 @@ from app.api.v1.schemas import SSLLogResponse, SSLStatusResponse
 
 
 # Test the /websites/{website_id}/ssl-checks endpoint
-def test_check_website_ssl(client, test_db: Session, user_with_notification_preference):
-    user, _ = user_with_notification_preference
+def test_check_website_ssl(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
+
     # Add a website to the database
     website = Website(
         id=uuid4(), url="https://example.com", name="Example Website", user=user
@@ -19,7 +21,7 @@ def test_check_website_ssl(client, test_db: Session, user_with_notification_pref
     test_db.commit()
 
     # Trigger the SSL check
-    response = client.post(f"/websites/{website.id}/ssl-checks")
+    response = client.post(f"/websites/{website.id}/ssl-checks", headers=headers)
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == {
         "message": "SSL check initiated. Results will be available in logs."
@@ -39,8 +41,9 @@ def test_check_ssl(client):
 
 
 # Test the /websites/{website_id}/ssl-logs endpoint
-def test_get_ssl_logs(client, test_db: Session, user_with_notification_preference):
-    user, _ = user_with_notification_preference
+def test_get_ssl_logs(client, test_db: Session, logged_in_user):
+    user = logged_in_user["user"]
+    headers = logged_in_user["headers"]
 
     # Add a website and SSL logs to the database
     website = Website(
@@ -61,7 +64,7 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
     test_db.commit()
 
     # Retrieve SSL logs
-    response = client.get(f"/websites/{website.id}/ssl-logs?limit=2")
+    response = client.get(f"/websites/{website.id}/ssl-logs?limit=2", headers=headers)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert "data" in data
@@ -74,17 +77,21 @@ def test_get_ssl_logs(client, test_db: Session, user_with_notification_preferenc
 
 
 # Test the /websites/{website_id}/ssl-logs endpoint for a non-existent website
-def test_get_ssl_logs_not_found(client):
+def test_get_ssl_logs_not_found(client, logged_in_user):
+    headers = logged_in_user["headers"]
     non_existent_id = uuid4()
-    response = client.get(f"/websites/{non_existent_id}/ssl-logs?limit=2")
+    response = client.get(
+        f"/websites/{non_existent_id}/ssl-logs?limit=2", headers=headers
+    )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": f"Website with id {non_existent_id} not found"}
 
 
 # Pagination and filtering tests
-def test_get_ssl_logs_basic_pagination(client, test_ssl_logs):
+def test_get_ssl_logs_basic_pagination(client, test_ssl_logs, logged_in_user):
+    headers = logged_in_user["headers"]
     website_id = test_ssl_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/ssl-logs?limit=2")
+    response = client.get(f"/websites/{website_id}/ssl-logs?limit=2", headers=headers)
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert len(data["data"]) == 2
@@ -93,9 +100,12 @@ def test_get_ssl_logs_basic_pagination(client, test_ssl_logs):
     assert data["next_cursor"] == 2
 
 
-def test_get_ssl_logs_with_cursor(client, test_ssl_logs):
+def test_get_ssl_logs_with_cursor(client, test_ssl_logs, logged_in_user):
+    headers = logged_in_user["headers"]
     website_id = test_ssl_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&cursor=2")
+    response = client.get(
+        f"/websites/{website_id}/ssl-logs?limit=2&cursor=2", headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert len(data["data"]) == 1  # Only 1 log left (id=3)
@@ -103,9 +113,12 @@ def test_get_ssl_logs_with_cursor(client, test_ssl_logs):
     assert data["next_cursor"] is None
 
 
-def test_get_valid_logs_only(client, test_ssl_logs):
+def test_get_valid_logs_only(client, test_ssl_logs, logged_in_user):
+    headers = logged_in_user["headers"]
     website_id = test_ssl_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&is_valid=true")
+    response = client.get(
+        f"/websites/{website_id}/ssl-logs?limit=2&is_valid=true", headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert len(data["data"]) == 2
@@ -115,9 +128,12 @@ def test_get_valid_logs_only(client, test_ssl_logs):
     assert all(log["is_valid"] for log in data["data"])
 
 
-def test_get_invalid_logs_only(client, test_ssl_logs):
+def test_get_invalid_logs_only(client, test_ssl_logs, logged_in_user):
+    headers = logged_in_user["headers"]
     website_id = test_ssl_logs[0].website_id
-    response = client.get(f"/websites/{website_id}/ssl-logs?limit=2&is_valid=false")
+    response = client.get(
+        f"/websites/{website_id}/ssl-logs?limit=2&is_valid=false", headers=headers
+    )
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert len(data["data"]) == 1  # Only 1 invalid log

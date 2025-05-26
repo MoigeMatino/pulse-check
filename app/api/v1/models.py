@@ -15,6 +15,8 @@ class NotificationType(str, Enum):
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=lambda: uuid4(), primary_key=True)
     email: str = Field(..., unique=True, nullable=False)
+    password_hash: str = Field(...)
+    is_active: bool = Field(default=True)
     slack_webhook: str | None = Field(default=None)
     phone_number: str | None = Field(default=None)
     websites: List["Website"] = Relationship(back_populates="user")

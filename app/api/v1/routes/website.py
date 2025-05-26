@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
+from app.api.v1.models import User
 from app.api.v1.schemas import (
     PaginatedUptimeLogResponse,
     PaginatedWebsiteReadResponse,
@@ -13,6 +14,7 @@ from app.api.v1.schemas import (
     WebsiteSearchResponse,
     WebsiteUpdate,
 )
+from app.auth import get_current_user
 from app.dependencies.db import get_db
 from app.utils.crud import (
     create_website,
@@ -30,7 +32,9 @@ router = APIRouter(prefix="/websites", tags=["websites"])
 
 @router.post("/", response_model=WebsiteRead, status_code=status.HTTP_201_CREATED)
 def create_website_endpoint(
-    website: WebsiteCreate, db: Session = Depends(get_db)
+    website: WebsiteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> WebsiteRead:
     """
     Register a new website for uptime monitoring
@@ -42,6 +46,8 @@ def create_website_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Website with URL {website.url} already exists",
         )
+    website.user_id = current_user.id  # Associate the website with the current user
+    # Create the website
     new_website = create_website(db, website)
     return new_website
 
@@ -51,11 +57,12 @@ def get_websites_endpoint(
     cursor: Optional[UUID] = Query(None),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PaginatedWebsiteReadResponse:
     """
     Get all registered websites
     """
-    result = get_all_websites(db, cursor=cursor, limit=limit)
+    result = get_all_websites(db, user_id=current_user.id, cursor=cursor, limit=limit)
     return PaginatedWebsiteReadResponse(**result)
 
 
@@ -65,11 +72,14 @@ def search_websites_endpoint(
     cursor: Optional[UUID] = Query(None),
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> WebsiteSearchResponse:
     """
     Search websites by url or name with cursor pagination.
     """
-    result = search_websites(db, query=q, cursor=cursor, limit=limit)
+    result = search_websites(
+        db, query=q, user_id=current_user.id, cursor=cursor, limit=limit
+    )
     return WebsiteSearchResponse(**result)
 
 
@@ -77,11 +87,12 @@ def search_websites_endpoint(
 def get_single_website_endpoint(
     website_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> WebsiteRead:
     """
     Get website by its id
     """
-    website = get_website_by_id(db, website_id)
+    website = get_website_by_id(db, website_id, current_user.id)
     if not website:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Website not found"
@@ -96,8 +107,9 @@ def get_uptime_logs(
     limit: int = Query(10, ge=1, le=100),
     is_up: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> PaginatedUptimeLogResponse:
-    website = get_website_by_id(db, website_id)
+    website = get_website_by_id(db, website_id, current_user.id)
     if not website:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Website not found"
@@ -111,6 +123,7 @@ def update_website_endpoint(
     website_id: UUID,
     website_update: WebsiteUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> WebsiteRead:
     """
     Update website details (e.g., toggle is_active)
@@ -118,7 +131,7 @@ def update_website_endpoint(
     update_data = website_update.model_dump(exclude_unset=True)
     if "url" in update_data:
         update_data["url"] = str(update_data["url"])  # Convert HttpUrl to str
-    updated_website = update_website(db, website_id, update_data)
+    updated_website = update_website(db, website_id, update_data, current_user.id)
     if not updated_website:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -131,11 +144,12 @@ def update_website_endpoint(
 def delete_website_endpoint(
     website_id: UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Delete a website
     """
-    success = delete_website(db, website_id)
+    success = delete_website(db, website_id, current_user.id)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
