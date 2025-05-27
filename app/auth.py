@@ -1,20 +1,21 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from passlib.context import CryptContext
-from sqlmodel import Session
+from sqlmodel import Session, select
 
-from app.api.v1.models import User
+from app.api.v1.models import RefreshToken, User
 from app.dependencies.db import get_db
 from app.dependencies.settings import get_settings
 from app.exceptions.auth import InvalidCredentialsException
 from app.utils.crud import get_user_by_id
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 settings = get_settings()
 SECRET_KEY = settings.secret_key
 ALGORITHM = settings.encryption_algo
@@ -44,6 +45,22 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
+def create_refresh_token(db: Session, user_id: UUID) -> str:
+    raw_token = str(uuid4())  # Generate random token
+    token_hash = pwd_context.hash(raw_token)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    refresh_token = RefreshToken(
+        user_id=user_id,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    db.add(refresh_token)
+    db.commit()
+
+    return raw_token
+
+
 def verify_token(token: str) -> dict | None:
     try:
         decoded_token_data = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -56,6 +73,30 @@ def verify_token(token: str) -> dict | None:
         return {"status": "expired"}
     except jwt.JWTError:
         return None
+
+
+def verify_refresh_token(db: Session, token: str) -> bool:
+    token_hash = pwd_context.hash(token)  # Hash the token for comparison
+    statement = select(RefreshToken).where(
+        RefreshToken.token_hash == token_hash,
+        RefreshToken.expires_at > datetime.now(timezone.utc),
+    )
+    refresh_token = db.exec(statement).first()
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired refresh token",
+        )
+    return refresh_token.user_id
+
+
+def revoke_refresh_token(db: Session, token: str) -> None:
+    token_hash = pwd_context.hash(token)
+    statement = select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+    refresh_token = db.exec(statement).first()
+    if refresh_token:
+        db.delete(refresh_token)
+        db.commit()
 
 
 def get_current_user(
