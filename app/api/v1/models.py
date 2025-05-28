@@ -93,7 +93,7 @@ class SSLLog(SQLModel, table=True):
 class RefreshToken(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: UUID = Field(foreign_key="user.id", index=True)
-    token_hash: str = Field(max_length=128)  # Hashed token
+    token_hash: str = Field(max_length=128, index=True)  # Hashed token
     expires_at: datetime
     issued_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user: Optional[User] = Relationship(back_populates="refresh_tokens")

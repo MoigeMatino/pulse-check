@@ -76,13 +76,11 @@ def verify_token(token: str) -> dict | None:
 
 
 def verify_refresh_token(db: Session, token: str) -> UUID:
-    token_hash = pwd_context.hash(token)  # Hash the token for comparison
     statement = select(RefreshToken).where(
-        RefreshToken.token_hash == token_hash,
         RefreshToken.expires_at > datetime.now(timezone.utc),
     )
     refresh_token = db.exec(statement).first()
-    if not refresh_token:
+    if not refresh_token or not pwd_context.verify(token, refresh_token.token_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired refresh token",
