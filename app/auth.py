@@ -75,7 +75,7 @@ def verify_token(token: str) -> dict | None:
         return None
 
 
-def verify_refresh_token(db: Session, token: str) -> bool:
+def verify_refresh_token(db: Session, token: str) -> UUID:
     token_hash = pwd_context.hash(token)  # Hash the token for comparison
     statement = select(RefreshToken).where(
         RefreshToken.token_hash == token_hash,

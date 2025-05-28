@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
@@ -8,9 +8,12 @@ from app.api.v1.models import User
 from app.api.v1.schemas import UserCreate, UserRead
 from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
+    create_refresh_token,
     get_password_hash,
     verify_password,
+    verify_refresh_token,
 )
 from app.dependencies.db import get_db
 from app.utils.crud import get_user_by_email
@@ -38,7 +41,9 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)) -> UserRead:
 
 @router.post("/login")
 def login_user(
-    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+    response: Response,
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
 ) -> dict:
     user = db.exec(select(User).where(User.email == form_data.username)).first()
     if not user or not verify_password(form_data.password, user.password_hash):
@@ -50,5 +55,34 @@ def login_user(
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+    refresh_token = create_refresh_token(db, user_id=user.id)
+    # Set refresh token in HttpOnly cookie
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=int(timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS).total_seconds()),
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/refresh")
+def refresh_token(
+    refresh_token: str = Cookie(None, alias="refresh_token"),
+    db: Session = Depends(get_db),
+):
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token missing",
+        )
+
+    user_id = verify_refresh_token(db, refresh_token)
+    access_token = create_access_token(
+        data={"sub": str(user_id)},
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return {"access_token": access_token, "token_type": "bearer"}
