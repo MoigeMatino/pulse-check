@@ -12,21 +12,21 @@ class NotificationType(str, Enum):
     SLACK = "slack"
 
 
+class UserBase(BaseModel):
+    email: EmailStr
+    slack_webhook: str | None
+    phone_number: str | None
+    
+    
 # Request and Response Schemas
-class UserCreate(BaseModel):
-    email: EmailStr
+class UserCreate(UserBase):
     password: str
-    slack_webhook: str | None
-    phone_number: str | None
-
-
-class UserRead(BaseModel):
+    
+    
+class UserRead(UserBase):
     id: UUID
-    email: EmailStr
     is_active: bool = True
-    slack_webhook: str | None
-    phone_number: str | None
-
+    
     class Config:
         from_attributes = True
 
