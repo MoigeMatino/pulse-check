@@ -13,12 +13,10 @@ class NotificationType(str, Enum):
     SMS = "sms"
     SLACK = "slack"
 
-
 class UserBase(BaseModel):
     email: EmailStr
     slack_webhook: str | None
     phone_number: str | None
-    
     
 # Request and Response Schemas
 class UserCreate(UserBase):
