@@ -1,12 +1,12 @@
 from uuid import uuid4
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.api.v1.models import User
 from app.auth import get_password_hash
 
 
-def test_register_user(client):
+def test_register_user(client, test_db: Session):
     new_user = {
         "email": "newuser@example.com",
         "password": "newuserpassword",
@@ -15,6 +15,15 @@ def test_register_user(client):
     }
     response = client.post("/auth/register", json=new_user)
     assert response.status_code == 201
+    assert response.json()["email"] == new_user["email"]
+    assert response.json()["slack_webhook"] == new_user["slack_webhook"]
+    assert response.json()["phone_number"] == new_user["phone_number"]
+    assert response.json()["is_active"] is True
+
+    # Verify user in database
+    user = test_db.exec(select(User).where(User.email == new_user["email"])).first()
+    assert user is not None
+    assert user.password_hash != new_user["password"]
 
 
 def test_login_user(client, test_db: Session):

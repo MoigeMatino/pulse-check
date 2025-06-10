@@ -1,5 +1,6 @@
 from datetime import datetime
 from enum import Enum
+from re import fullmatch
 from typing import List, Optional, Union
 from uuid import UUID
 
@@ -16,19 +17,68 @@ class UserBase(BaseModel):
     email: EmailStr
     slack_webhook: str | None
     phone_number: str | None
-    
-    
+
+
 # Request and Response Schemas
 class UserCreate(UserBase):
     password: str
-    
-    
+
+    @field_validator("password")
+    def validate_password(cls, value: Optional[str]) -> Optional[str]:
+        if value and (
+            len(value) < 8
+            or not fullmatch(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$", value)
+        ):
+            raise ValueError(
+                "Password must be at least 8 characters, with uppercase, lowercase, \n"
+                "and digits"
+            )
+        return value
+
+    @field_validator("phone_number")
+    def validate_phone_number(cls, value: Optional[str]) -> Optional[str]:
+        if value and not fullmatch(r"^\+\d{10,15}$", value):
+            raise ValueError("Phone number must be in format +1234567890")
+        return value
+
+
 class UserRead(UserBase):
     id: UUID
     is_active: bool = True
-    
+
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None
+    slack_webhook: Optional[str] = None
+    phone_number: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    @field_validator("is_active", mode="before")
+    def normalize_bool(cls, v):
+        """Convert int (0/1) to bool if needed"""
+        return bool(v) if isinstance(v, int) else v
+
+    @field_validator("password")
+    def validate_password(cls, value: Optional[str]) -> Optional[str]:
+        if value and (
+            len(value) < 8
+            or not fullmatch(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$", value)
+        ):
+            raise ValueError(
+                "Password must be at least 8 characters, with uppercase, lowercase,\n"
+                "and digits"
+            )
+        return value
+
+    @field_validator("phone_number")
+    def validate_phone_number(cls, value: Optional[str]) -> Optional[str]:
+        if value and not fullmatch(r"^\+\d{10,15}$", value):
+            raise ValueError("Phone number must be in format +1234567890")
+        return value
 
 
 class WebsiteBase(BaseModel):
