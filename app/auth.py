@@ -89,10 +89,11 @@ def verify_refresh_token(db: Session, token: str) -> UUID:
 
 
 def revoke_refresh_token(db: Session, token: str) -> None:
-    token_hash = pwd_context.hash(token)
-    statement = select(RefreshToken).where(RefreshToken.token_hash == token_hash)
+    statement = select(RefreshToken).where(
+        RefreshToken.expires_at > datetime.now(timezone.utc)
+    )
     refresh_token = db.exec(statement).first()
-    if refresh_token:
+    if refresh_token and pwd_context.verify(token, refresh_token.token_hash):
         db.delete(refresh_token)
         db.commit()
 

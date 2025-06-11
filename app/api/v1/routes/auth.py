@@ -11,7 +11,9 @@ from app.auth import (
     REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
     create_refresh_token,
+    get_current_user,
     get_password_hash,
+    revoke_refresh_token,
     verify_password,
     verify_refresh_token,
 )
@@ -67,6 +69,25 @@ def login_user(
         max_age=int(timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS).total_seconds()),
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/logout")
+def logout(
+    response: Response,
+    refresh_token: str = Cookie(None, alias="refresh_token"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    if refresh_token:
+        revoke_refresh_token(db, refresh_token)
+
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="strict",
+    )
+    return {"message": "Logged out successfully"}
 
 
 @router.post("/refresh")
