@@ -45,7 +45,7 @@ def test_check_ssl_status_task_success(test_db: Session):
         assert isinstance(result["days_remaining"], int)
 
         # Check that an SSLLog was created
-        ssl_log = test_db.exec(select(SSLLog).filter_by(website_id=website_id)).first()
+        ssl_log = test_db.exec(select(SSLLog).where(website_id=website_id)).first()
         assert ssl_log is not None
         assert ssl_log.is_valid is True
         assert ssl_log.error is None
@@ -62,7 +62,7 @@ def test_check_ssl_status_task_failure(test_db: Session):
         assert result["error"] == "Invalid URL format"
 
         # Check that an SSLLog was created with error
-        ssl_log = test_db.query(SSLLog).filter_by(website_id=website_id).first()
+        ssl_log = test_db.exec(select(SSLLog).where(website_id=website_id)).first()
         assert ssl_log is not None
         assert ssl_log.is_valid is False
         assert ssl_log.error == "Invalid URL"
