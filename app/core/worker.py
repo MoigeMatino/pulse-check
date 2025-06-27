@@ -27,10 +27,10 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.ssl_checker.periodic_ssl_check",
         "schedule": crontab(hour=0, minute=0),  # Run daily at midnight
     },
-    # Uptime check task (runs every minute)
+    # Uptime check task (runs every 5 minutes)
     "schedule-uptime-checks-every-minute": {
         "task": "app.tasks.uptime_checker.schedule_uptime_checks",
-        "schedule": crontab(minute="*"),
+        "schedule": crontab(minute="*/5"),
     },
 }
 

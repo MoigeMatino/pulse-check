@@ -1,4 +1,5 @@
 from datetime import datetime
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi import status
@@ -20,12 +21,15 @@ def test_check_website_ssl(client, test_db: Session, logged_in_user):
     test_db.add(website)
     test_db.commit()
 
-    # Trigger the SSL check
-    response = client.post(f"/websites/{website.id}/ssl-checks", headers=headers)
-    assert response.status_code == status.HTTP_200_OK
-    assert response.json() == {
-        "message": "SSL check initiated. Results will be available in logs."
-    }
+    with patch("app.tasks.ssl_checker.check_ssl_status_task.delay") as mock_task:
+        # Trigger the SSL check
+        response = client.post(f"/websites/{website.id}/ssl-checks", headers=headers)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "message": "SSL check initiated. Results will be available in logs."
+        }
+        # Assert the Celery task was called
+        mock_task.assert_called_once_with(website.url, website.id)
 
 
 # Test the /ssl-checks endpoint
