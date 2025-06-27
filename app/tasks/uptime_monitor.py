@@ -52,7 +52,7 @@ def schedule_uptime_checks(self):
             db.commit()
             logger.info(f"Uptime checks ran for {len(websites)} websites.")
     except OperationalError as e:
-        # implement jitter
+        # if database error occurs, retry with jitter
         delay = random.uniform(0, BASE_RETRY_DELAY * (2**self.request.retries))
         logger.error(f"Database connection error: {e}, retrying in {delay:.2f}s")
         self.retry(countdown=delay)
@@ -84,6 +84,7 @@ def check_website_uptime(self, url: str, website_id: str):
 
     except httpx.RequestError as exc:
         if isinstance(exc, httpx.TimeoutException):
+            # if a timeout occurs, retry with jitter
             delay = random.uniform(0, BASE_RETRY_DELAY * (2**self.request.retries))
             logger.warning(
                 f"HTTP check failed for {url}: {exc}, retrying in {delay:.2f}s"
