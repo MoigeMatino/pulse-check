@@ -12,6 +12,11 @@ class NotificationType(str, Enum):
     SLACK = "slack"
 
 
+class CheckType(str, Enum):
+    HTTP = "http"
+    PING = "ping"
+
+
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=lambda: uuid4(), primary_key=True)
     email: str = Field(..., unique=True, nullable=False)
@@ -56,6 +61,9 @@ class Website(SQLModel, table=True):
         default=30
     )  # configurable number of days for warning on ssl expiry
     uptime_last_checked: datetime | None = Field(default=None)
+    check_type: Optional[CheckType] = Field(
+        default=CheckType.HTTP
+    )  # type of check to perform (HTTP, PING, etc.)
     user: User | None = Relationship(back_populates="websites")
 
 

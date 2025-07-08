@@ -1,0 +1,26 @@
+@28/06/2025 - Add `check_type` field to `Website` model:
+Todo:
+  ✔ Add `check_type` field to `Website` model @done(25-06-28 15:53)
+    Define `check_type` as an Enum with values `HTTP`, `PING` ?DNS
+    Find out viability of DNS
+    Ensure `check_type` is optional with a default value of `HTTP`
+  ✔ Add database migration to include `check_type` field @done(25-06-28 16:37)
+    Define enum in migration file manually as alembic does not automatically create enum type in the database before trying to use it in a column.
+      Why is this important? Postgresql treats enums as a database type that must exist before they can be used in a column definition.
+    Create migration script to add `check_type` field to the `Website` table with alembic
+    Run migration to update the database schema
+  ✔ Add `check_type` field to schemas @done(25-06-28 16:43)
+    ✔ Update `WebsiteBase` schema to include `check_type` @done(25-06-28 16:43)
+      WebsiteCreate and WebsiteRead inherit from `WebsiteBase`
+    ✔ Update `WebsiteUpdate` schema to include `check_type` @done(25-06-28 16:43)
+  ✘ Update API endpoints to include `check_type` @cancelled(25-06-28 16:45)
+    ✘ Update `create_website` endpoint to accept `check_type` @cancelled(25-06-28 16:45)
+    ✘ Update `update_website` endpoint to accept `check_type` @cancelled(25-06-28 16:45)
+  ☐ Update `check_website_uptime` task to handle `check_type`
+    ☐ Modify the task to perform different checks based on `check_type`
+    ☐ Ensure that the task can handle both HTTP and PING checks
+  ☐ Update tests to include `check_type`
+    ☐ Modify `create_website` endpoint tests to include `check_type`
+    ☐ Modify `update_website` endpoint tests to include `check_type`
+    ☐ Modify `get_websites` endpoint tests to include `check_type`
+    ☐ Modify `check_website_uptime` task tests to handle different `check_type` values

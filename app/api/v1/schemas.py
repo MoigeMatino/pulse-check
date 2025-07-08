@@ -88,6 +88,7 @@ class WebsiteBase(BaseModel):
     check_interval: Optional[int] = 300  # Default 5 minutes (300 seconds)
     is_active: Union[int, bool] = True  # Accept int or bool, normalize later
     ssl_check_enabled: Union[int, bool] = True
+    check_type: Optional[str] = "http"  # Default to HTTP check
 
     @field_validator("is_active", "ssl_check_enabled", mode="before")
     def normalize_bool(cls, v):
@@ -124,6 +125,7 @@ class WebsiteUpdate(BaseModel):
     # tiered offerings, for now we take a 'determined-by-us' approach
     is_active: Optional[Union[int, bool]] = None
     ssl_check_enabled: Optional[Union[int, bool]] = None
+    check_type: Optional[str] = "http"
 
     @field_validator("is_active", "ssl_check_enabled", mode="before")
     def normalize_bool(cls, v):
