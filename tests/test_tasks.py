@@ -90,8 +90,8 @@ def test_check_website_uptime(client: TestClient, test_db: Session):
     assert result["is_up"] is True
 
     # Test ping check
-    # result = check_website_uptime.run(str(website.id), website.url, "ping")
-    # assert result["website_id"] == str(website.id)
+    result = check_website_uptime.run(str(website.id), website.url, "ping")
+    assert result["website_id"] == str(website.id)
 
     # Test invalid website_id
     result = check_website_uptime.run("invalid-uuid", website.url, "http")
@@ -110,3 +110,4 @@ def test_check_website_uptime(client: TestClient, test_db: Session):
         select(UptimeLog).where(UptimeLog.website_id == website.id)
     ).first()
     assert log is not None
+    assert log.check_type == "http"
