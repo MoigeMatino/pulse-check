@@ -92,7 +92,9 @@ class SSLLog(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     website_id: UUID = Field(..., foreign_key="website.id")
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    valid_until: datetime  # Expiry date of the SSL certificate
+    valid_until: Optional[datetime] = Field(
+        default=None
+    )  # Expiry date of the SSL certificate
     issuer: str | None = None  # Certificate issuer (e.g., "Let's Encrypt") or None
     is_valid: bool  # Whether the certificate is valid
     error: str | None = None  # Store error messages if the check fails
