@@ -5,6 +5,7 @@ from uuid import UUID
 
 import httpx
 from celery.utils.log import get_task_logger
+from ping3 import ping
 from sqlalchemy.exc import OperationalError
 from sqlmodel import select
 
@@ -46,7 +47,9 @@ def schedule_uptime_checks(self):
                 logger.info("No websites due for uptime check.")
                 return
             for website in websites:
-                check_website_uptime.delay(website.url, str(website.id))
+                check_website_uptime.delay(
+                    website.url, str(website.id), website.check_type
+                )
                 website.uptime_last_checked = now
                 db.add(website)
             db.commit()
@@ -63,7 +66,7 @@ def schedule_uptime_checks(self):
 
 
 @celery_app.task(bind=True, max_retries=3)
-def check_website_uptime(self, url: str, website_id: str):
+def check_website_uptime(self, url: str, website_id: str, check_type: str = "http"):
     """
     Periodically checks the uptime of a website.
     """
@@ -76,11 +79,21 @@ def check_website_uptime(self, url: str, website_id: str):
     try:
         # validate url
         domain = validate_url(url)
-        with httpx.Client(timeout=10.0) as client:
-            response = client.get(domain)
-            is_up = response.status_code == 200
-            status_code = response.status_code
-            response_time = response.elapsed.total_seconds()
+        if check_type == "http":
+            with httpx.Client(timeout=10.0) as client:
+                response = client.get(domain)
+                is_up = response.status_code == 200
+                status_code = response.status_code
+                response_time = response.elapsed.total_seconds()
+        elif check_type == "ping":
+            response_time = ping(domain, timeout=10)
+            is_up = response_time is not None
+            status_code = None
+            error_message = "Ping failed" if not is_up else None
+            response_time = response_time if is_up else None
+        else:
+            logger.error(f"Invalid check_type: {check_type}")
+            return {"website_id": website_id, "error": "Invalid check_type"}
 
     except httpx.RequestError as exc:
         if isinstance(exc, httpx.TimeoutException):
