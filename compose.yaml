@@ -2,6 +2,8 @@ services:
   app:
     build:
       context: .
+      args:
+        UID: ${UID:-10001}
     container_name: app
     ports:
       - 8000:8000
