@@ -2,13 +2,13 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from passlib.context import CryptContext
 from sqlmodel import Session, select
 
-from app.api.v1.models import RefreshToken, User
+from app.api.v1.models import APIKey, RefreshToken, User
 from app.dependencies.db import get_db
 from app.dependencies.settings import get_settings
 from app.exceptions.auth import InvalidCredentialsException
@@ -112,3 +112,17 @@ def get_current_user(
     if user is None:
         raise InvalidCredentialsException("User does not exist")
     return user
+
+
+async def validate_api_key(api_key: str = Header(...), db: Session = Depends(get_db)):
+    key_record = db.exec(
+        select(APIKey).where(APIKey.key == api_key, APIKey.is_active)
+    ).first()
+    if not key_record or (
+        key_record.expires_at and key_record.expires_at < datetime.now(timezone.utc)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired API key",
+        )
+    return key_record

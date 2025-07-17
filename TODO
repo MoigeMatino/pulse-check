@@ -26,14 +26,16 @@ Todo:
     ☐ Modify `check_website_uptime` task tests to handle different `check_type` values
 
 @15/06/2025 - Add `AdHocSSLLog` model:
+Todo:
   To allow logging of ssl checks for adhoc sites
 ✔ Create `AdHocSSLLog` model @done(25-07-17 11:04)
   ✔ Create and apply migration @done(25-07-17 11:04)
 ✔ Define `APIKey` model @done(25-07-17 11:06)
     ✔ Create and apply migration @done(25-07-17 11:06)
   ? api_key_id in AdHocSSLLog is nullable, should we consider giving a limited number of checks if unauthenticated @important
-☐ Update `check_ssl_status_task`
+✔ Update `check_ssl_status_task` @done(25-07-17 11:44)
   Update the task to log to AdHocSSLLog for ad hoc checks (website_id=None) and SSLLog for stored websites, including api_key_id for ad hoc logs
-☐ Update the `/ssl-checks` Endpoint
+✔ Update the `/ssl-checks` Endpoint @done(25-07-17 12:23)
   Update the endpoint to require API key authentication and pass api_key_id to the task.
-  ☐ Add dependency to validate `api_key`
+  ✔ Add dependency to validate `api_key` @done(25-07-17 12:22)
+  ✔ Pass dependency to endpoint, then pass to invocation of `check_ssl_status_task` @done(25-07-17 12:23)

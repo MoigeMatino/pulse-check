@@ -4,9 +4,9 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
-from app.api.v1.models import User
+from app.api.v1.models import APIKey, User
 from app.api.v1.schemas import PaginatedSSLLogResponse, SSLStatusResponse
-from app.auth import get_current_user
+from app.auth import get_current_user, validate_api_key
 from app.dependencies.db import get_db
 from app.tasks.ssl_checker import check_ssl_status_task
 from app.utils.crud import fetch_ssl_logs, get_website_by_id
@@ -46,14 +46,20 @@ def check_website_ssl(
     return {"message": "SSL check initiated. Results will be available in logs."}
 
 
-# * Good candidate for api key authentication
 @router.get("/ssl-checks", response_model=SSLStatusResponse)
-def check_ssl(url: str) -> SSLStatusResponse:
+def check_ssl(
+    url: str, api_key: APIKey = Depends(validate_api_key)
+) -> SSLStatusResponse:
     """
     Perform an ad-hoc SSL check for an arbitrary URL (not stored in the database)
     This runs synchronously and returns the result immediately
+    If we ran it as a task with .delay() it would be queued and ran asynchronously,
+    not giving the user immediate feedback. Furthermore, it would return a task_id
+    and not the actual ssl check result
+    Also, if we used delay, clients would need to poll for results, adding
+    complexity to the frontend/API consumer
     """
-    return check_ssl_status_task(url)
+    return check_ssl_status_task(url, api_key_id=str(api_key.id))
 
 
 @router.get("/websites/{website_id}/ssl-logs", response_model=PaginatedSSLLogResponse)
