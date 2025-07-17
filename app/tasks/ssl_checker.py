@@ -8,7 +8,7 @@ from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from sqlmodel import select
 
-from app.api.v1.models import SSLLog, Website
+from app.api.v1.models import AdHocSSLLog, SSLLog, Website
 from app.api.v1.schemas import SSLStatusResponse
 from app.core.worker import celery_app
 from app.dependencies.db import SessionLocal
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task
 def check_ssl_status_task(
-    url: str, website_id: Optional[str] = None
+    url: str, website_id: Optional[str] = None, api_key_id: Optional[str] = None
 ) -> SSLStatusResponse:
     """
     Celery task to check SSL certificate status for a given website or URL
@@ -53,8 +53,8 @@ def check_ssl_status_task(
                 }
 
                 # Log the result to the database (if website_id is provided)
-                if website_id:
-                    with SessionLocal() as db:
+                with SessionLocal() as db:
+                    if website_id:
                         ssl_log = SSLLog(
                             website_id=website_id,
                             valid_until=expiry_date,
@@ -63,8 +63,17 @@ def check_ssl_status_task(
                             error=None,
                         )
                         db.add(ssl_log)
-                        db.commit()
-
+                    else:
+                        adhoc_ssl_log = AdHocSSLLog(
+                            url=url,
+                            api_key_id=api_key_id,
+                            valid_until=expiry_date,
+                            issuer=issuer,
+                            is_valid=True,
+                            error=None,
+                        )
+                    db.add(adhoc_ssl_log)
+                db.commit()
                 return result
 
     except Exception as e:
@@ -79,8 +88,8 @@ def check_ssl_status_task(
         }
 
         # Log the error to the database (if website_id is provided)
-        if website_id:
-            with SessionLocal() as db:
+        with SessionLocal() as db:
+            if website_id:
                 ssl_log = SSLLog(
                     website_id=website_id,
                     valid_until=None,
@@ -89,8 +98,16 @@ def check_ssl_status_task(
                     error=str(e),
                 )
                 db.add(ssl_log)
-                db.commit()
-
+            else:
+                adhoc_ssl_log = AdHocSSLLog(
+                    url=url,
+                    api_key_id=api_key_id,
+                    valid_until=None,
+                    issuer=None,
+                    is_valid=False,
+                    error=str(e),
+                )
+            db.commit()
         return result
 
 
