@@ -20,6 +20,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade():
+    # Enable uuid-ossp extension for uuid_generate_v4()
+    op.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+
     # User table
     op.create_table(
         "user",

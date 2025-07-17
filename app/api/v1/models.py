@@ -101,9 +101,41 @@ class SSLLog(SQLModel, table=True):
 
 
 class RefreshToken(SQLModel, table=True):
-    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    # TODO: define default_Factory as lambda: uuid4()
+    id: UUID = Field(default_factory=lambda: uuid4(), primary_key=True)
     user_id: UUID = Field(foreign_key="user.id", index=True)
     token_hash: str = Field(max_length=128, index=True)  # Hashed token
     expires_at: datetime
     issued_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     user: Optional[User] = Relationship(back_populates="refresh_tokens")
+
+
+class AdHocSSLLog(SQLModel, table=True):
+    __tablename__ = "ad_hoc_ssl_log"
+
+    id: UUID = Field(default_factory=lambda: uuid4(), primary_key=True)
+    url: str = Field(nullable=False)
+    # TODO: add APIKey model
+    api_key_id: Optional[UUID] = Field(
+        default=None, foreign_key="api_key.id", nullable=True
+    )
+    valid_until: Optional[datetime] = Field(default=None, nullable=True)
+    issuer: Optional[str] = Field(default=None, nullable=True)
+    is_valid: bool = Field(nullable=False)
+    error: Optional[str] = Field(default=None, nullable=True)
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class APIKey(SQLModel, table=True):
+    __tablename__ = "api_key"
+
+    id: UUID = Field(default_factory=lambda: uuid4(), primary_key=True)
+    key: str = Field(unique=True, nullable=False)
+    owner: Optional[str] = Field(default=None, nullable=True)
+    is_active: bool = Field(default=True, nullable=False)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    expires_at: Optional[datetime] = Field(default=None, nullable=True)

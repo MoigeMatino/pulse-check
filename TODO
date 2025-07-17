@@ -16,11 +16,24 @@ Todo:
   ✘ Update API endpoints to include `check_type` @cancelled(25-06-28 16:45)
     ✘ Update `create_website` endpoint to accept `check_type` @cancelled(25-06-28 16:45)
     ✘ Update `update_website` endpoint to accept `check_type` @cancelled(25-06-28 16:45)
-  ☐ Update `check_website_uptime` task to handle `check_type`
-    ☐ Modify the task to perform different checks based on `check_type`
-    ☐ Ensure that the task can handle both HTTP and PING checks
+  ✔ Update `check_website_uptime` task to handle `check_type` @done(25-07-16 10:14)
+    ✔ Modify the task to perform different checks based on `check_type` @done(25-07-16 10:14)
+    ✔ Ensure that the task can handle both HTTP and PING checks @done(25-07-16 10:14)
   ☐ Update tests to include `check_type`
     ☐ Modify `create_website` endpoint tests to include `check_type`
     ☐ Modify `update_website` endpoint tests to include `check_type`
     ☐ Modify `get_websites` endpoint tests to include `check_type`
     ☐ Modify `check_website_uptime` task tests to handle different `check_type` values
+
+@15/06/2025 - Add `AdHocSSLLog` model:
+  To allow logging of ssl checks for adhoc sites
+✔ Create `AdHocSSLLog` model @done(25-07-17 11:04)
+  ✔ Create and apply migration @done(25-07-17 11:04)
+✔ Define `APIKey` model @done(25-07-17 11:06)
+    ✔ Create and apply migration @done(25-07-17 11:06)
+  ? api_key_id in AdHocSSLLog is nullable, should we consider giving a limited number of checks if unauthenticated @important
+☐ Update `check_ssl_status_task`
+  Update the task to log to AdHocSSLLog for ad hoc checks (website_id=None) and SSLLog for stored websites, including api_key_id for ad hoc logs
+☐ Update the `/ssl-checks` Endpoint
+  Update the endpoint to require API key authentication and pass api_key_id to the task.
+  ☐ Add dependency to validate `api_key`
