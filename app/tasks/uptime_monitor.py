@@ -94,7 +94,7 @@ def check_website_uptime(self, url: str, website_id: str, check_type: str = "htt
         else:
             logger.error(f"Invalid check_type: {check_type}")
             return {"website_id": website_id, "error": "Invalid check_type"}
-
+    # TODO: catch PingError exception
     except httpx.RequestError as exc:
         if isinstance(exc, httpx.TimeoutException):
             # if a timeout occurs, retry with jitter
