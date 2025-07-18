@@ -187,3 +187,12 @@ class PaginatedUptimeLogResponse(BaseModel):
     data: List[UptimeLogResponse]
     next_cursor: Optional[datetime] = None
     has_next: bool = False  # More logs available?
+
+
+class APIKeyResponse(BaseModel):
+    key: str
+    created_at: datetime
+    expires_at: datetime
+
+    class Config:
+        from_attributes = True

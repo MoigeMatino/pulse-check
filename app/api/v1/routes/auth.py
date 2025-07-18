@@ -1,11 +1,12 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from uuid import uuid4
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 
-from app.api.v1.models import User
-from app.api.v1.schemas import UserCreate, UserRead
+from app.api.v1.models import APIKey, User
+from app.api.v1.schemas import APIKeyResponse, UserCreate, UserRead
 from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
@@ -107,3 +108,26 @@ def refresh_token(
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post("/api-keys", response_model=APIKeyResponse)
+async def generate_api_key(
+    user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> APIKeyResponse:
+    """
+    Generate a new API key for the authenticated user
+    """
+    # ? Maybe think of hashing this api key in future
+    api_key = str(uuid4())  # Generate unique key
+    expires_at = datetime.now(timezone.utc) + timedelta(days=365)  # 1-year expiration
+    key = APIKey(
+        key=api_key,
+        owner=user.id,
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        expires_at=expires_at,
+    )
+    db.add(key)
+    db.commit()
+    db.refresh(key)
+    return key
