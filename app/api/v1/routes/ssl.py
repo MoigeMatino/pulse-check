@@ -8,6 +8,7 @@ from app.api.v1.models import APIKey, User
 from app.api.v1.schemas import PaginatedSSLLogResponse, SSLStatusResponse
 from app.auth import get_current_user, validate_api_key
 from app.dependencies.db import get_db
+from app.dependencies.rate_limit import get_api_key_rate_limiter
 from app.tasks.ssl_checker import check_ssl_status_task
 from app.utils.crud import fetch_ssl_logs, get_website_by_id
 
@@ -47,8 +48,10 @@ def check_website_ssl(
 
 
 @router.get("/ssl-checks", response_model=SSLStatusResponse)
-def check_ssl(
-    url: str, api_key: APIKey = Depends(validate_api_key)
+async def check_ssl(
+    url: str,
+    api_key: APIKey = Depends(validate_api_key),
+    dependencies=[Depends(get_api_key_rate_limiter())],
 ) -> SSLStatusResponse:
     """
     Perform an ad-hoc SSL check for an arbitrary URL (not stored in the database)

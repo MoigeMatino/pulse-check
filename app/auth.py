@@ -114,7 +114,9 @@ def get_current_user(
     return user
 
 
-async def validate_api_key(api_key: str = Header(...), db: Session = Depends(get_db)):
+async def validate_api_key(
+    api_key: str = Header(..., alias="X-API-Key"), db: Session = Depends(get_db)
+):
     key_record = db.exec(
         select(APIKey).where(APIKey.key == api_key, APIKey.is_active)
     ).first()
