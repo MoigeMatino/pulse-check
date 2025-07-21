@@ -47,11 +47,14 @@ def check_website_ssl(
     return {"message": "SSL check initiated. Results will be available in logs."}
 
 
-@router.get("/ssl-checks", response_model=SSLStatusResponse)
+@router.get(
+    "/ssl-checks",
+    response_model=SSLStatusResponse,
+    dependencies=[Depends(get_api_key_rate_limiter())],
+)
 async def check_ssl(
     url: str,
     api_key: APIKey = Depends(validate_api_key),
-    dependencies=[Depends(get_api_key_rate_limiter())],
 ) -> SSLStatusResponse:
     """
     Perform an ad-hoc SSL check for an arbitrary URL (not stored in the database)
