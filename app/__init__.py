@@ -1,4 +1,5 @@
 import logging
+import traceback
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
@@ -13,6 +14,13 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+def log_error_with_context(error: Exception, context: str = ""):
+    """Log errors with full stack trace and context"""
+    error_msg = f"ERROR in {context}: {type(error).__name__}: {str(error)}"
+    logger.error(error_msg)
+    logger.error(f"Stack trace:\n{traceback.format_exc()}")
 
 
 async def init_limiter():
@@ -37,7 +45,7 @@ async def lifespan(app: FastAPI):
         # await init_background_tasks()
 
     except Exception as e:
-        logger.error(f"❌ Startup failed: {e}")
+        log_error_with_context(e, "startup/init_limiter")
         raise  # prevent the app from starting
 
     yield  # app runs
@@ -46,14 +54,17 @@ async def lifespan(app: FastAPI):
     logger.info("🛑 Shutting down...")
 
     try:
+        logger.info("Closing FastAPI rate limiter...")
         # Shutdown tasks
         await FastAPILimiter.close()
         # Add the cleanup tasks here when needed
         # await close_database()
         # await cleanup_background_tasks()
+        logger.info("✅ Shutdown completed successfully")
     except Exception as e:
-        logger.error(f"❌ Shutdown error: {e}")
+        log_error_with_context(e, "shutdown/rate_limiter")
         # no need to raise - app is shutting down anyway
+        logger.warning("⚠️ Shutdown completed with errors (see above)")
 
 
 def create_app(lifespan_manager) -> FastAPI:
