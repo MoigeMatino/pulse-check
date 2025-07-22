@@ -2,7 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import redis.asyncio as redis
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from fastapi_limiter import FastAPILimiter
 
 from .api.v1.routes.auth import router as auth_router
@@ -63,10 +63,13 @@ def create_app(lifespan_manager) -> FastAPI:
         version="1.0.0",
         lifespan=lifespan_manager,
     )
+    api_v1 = APIRouter(prefix="/api/v1")
+    api_v1.include_router(ssl_router, tags=["ssl"])
+    api_v1.include_router(website_router, tags=["websites"])
+    api_v1.include_router(auth_router, tags=["auth"])
 
-    app.include_router(ssl_router, tags=["ssl"])
-    app.include_router(website_router, tags=["websites"])
-    app.include_router(auth_router, tags=["auth"])
+    app.include_router(api_v1)
+
     return app
 
 
