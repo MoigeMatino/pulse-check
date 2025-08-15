@@ -45,3 +45,5 @@ Todo:
   Handle API key generation and rate limit the public /ssl-checks endpoint
 ✔ Create endpoint to trigger api key generation @done(25-07-18 10:47)
   ✔ Add `APIKeyResponse` schema @done(25-07-18 10:47)
+☐ Implement rate limiting
+  ☐
